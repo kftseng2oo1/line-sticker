@@ -1,9 +1,9 @@
 {
-  "name": "My PWA App",
-  "short_name": "MyApp",
+  "name": "line-sticker",
+  "short_name": "line-sticker",
   "description": "",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/line-sticker/",
+  "scope": "/line-sticker/",
   "display": "standalone",
   "orientation": "any",
   "theme_color": "#1a73e8",
@@ -14,9 +14,9 @@
   ],
   "shortcuts": [
     {
-      "name": "開啟 MyApp",
-      "short_name": "MyApp",
-      "url": "/",
+      "name": "開啟 line-sticker",
+      "short_name": "line-sticker",
+      "url": "/line-sticker/",
       "icons": [
         {
           "src": "icon-192.png",

@@ -1,4 +1,4 @@
-# My PWA App
+# line-sticker
 
 > 一個 Progressive Web App
 
@@ -18,7 +18,7 @@
 ```bash
 git init
 git add .
-git commit -m "init: My PWA App PWA"
+git commit -m "init: line-sticker PWA"
 git branch -M main
 git remote add origin https://github.com/<username>/<repo>.git
 git push -u origin main
@@ -38,7 +38,7 @@ git push -u origin main
 | display | standalone |
 | theme_color | #1a73e8 |
 | lang | zh-TW |
-| scope | / |
+| scope | /line-sticker/ |
 
 ---
 *由 [PWA 打包神器](https://github.com) 自動生成*
