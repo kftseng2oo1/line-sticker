@@ -1512,11 +1512,59 @@ function loadSDPhoto(e) {
   if (!file) return;
   var reader = new FileReader();
   reader.onload = function(ev) {
-    sdPhotoDataUrl = ev.target.result;
-    var prev = document.getElementById('sdPhotoPreview');
-    if (prev) { prev.src = sdPhotoDataUrl; prev.style.display = 'block'; }
+    // Compress image before storing — SD API max 5MB
+    compressForSD(ev.target.result, function(compressed) {
+      sdPhotoDataUrl = compressed;
+      var prev = document.getElementById('sdPhotoPreview');
+      if (prev) { prev.src = compressed; prev.style.display = 'block'; }
+      // Show compressed size
+      var kb = Math.round(compressed.length * 0.75 / 1024);
+      showToast('照片已載入，壓縮後約 ' + kb + ' KB', 'success');
+    });
   };
   reader.readAsDataURL(file);
+}
+
+function compressForSD(dataUrl, callback) {
+  var img = new Image();
+  img.onload = function() {
+    // Target: max 1024px on longest side, JPEG quality 0.85
+    var maxSize = 1024;
+    var w = img.width;
+    var h = img.height;
+    if (w > maxSize || h > maxSize) {
+      var scale = Math.min(maxSize / w, maxSize / h);
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+    }
+    var canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+
+    // Try JPEG first (much smaller than PNG for photos)
+    var jpegUrl = canvas.toDataURL('image/jpeg', 0.85);
+    var jpegKB = Math.round(jpegUrl.length * 0.75 / 1024);
+
+    // If still over 4MB, reduce quality further
+    if (jpegKB > 4000) {
+      jpegUrl = canvas.toDataURL('image/jpeg', 0.65);
+      jpegKB = Math.round(jpegUrl.length * 0.75 / 1024);
+    }
+    if (jpegKB > 4000) {
+      // Resize further to 768px
+      var canvas2 = document.createElement('canvas');
+      var scale2 = 768 / Math.max(w, h);
+      canvas2.width = Math.round(w * scale2);
+      canvas2.height = Math.round(h * scale2);
+      var ctx2 = canvas2.getContext('2d');
+      ctx2.drawImage(canvas, 0, 0, canvas2.width, canvas2.height);
+      jpegUrl = canvas2.toDataURL('image/jpeg', 0.75);
+    }
+    callback(jpegUrl);
+  };
+  img.src = dataUrl;
 }
 
 async function generateWithSD(idx, count) {
@@ -1537,6 +1585,11 @@ async function generateWithSD(idx, count) {
       // img2img via /sd/i2i
       var base64 = sdPhotoDataUrl.split(',')[1];
       endpoint = SD_I2I_URL;
+      // Check size — SD API max 5MB (5242880 bytes)
+      var estimatedBytes = Math.round(base64.length * 0.75);
+      if (estimatedBytes > 5000000) {
+        throw new Error('圖片太大 (' + Math.round(estimatedBytes/1024) + 'KB)，請重新上傳較小的圖片');
+      }
       body = JSON.stringify({
         init_image:      base64,
         init_image_mode: 'IMAGE_STRENGTH',
