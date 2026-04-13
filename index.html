@@ -804,18 +804,6 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 .api-key-row .key-icon { font-size: 18px; flex-shrink: 0; }
 
 </style>
-
-<!-- PWA Meta — auto-injected by PWA 打包神器 -->
-<meta name="application-name" content="line-sticker">
-<meta name="description" content="">
-<meta name="theme-color" content="#1a73e8">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="line-sticker">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon.svg">
-<script>if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').then(function(r){console.log('[SW] registered:',r.scope)}).catch(function(e){console.warn('[SW] failed:',e)});});}</script>
 </head>
 <body>
 <div class="wrap">
@@ -1275,6 +1263,11 @@ let activeModal = null;
 var currentStyleMode = 'claude'; // 'claude' | 'sd'
 var sdPhotoDataUrl = null;
 
+// ─── Config ──────────────────────────────────────────────────────────────────
+var API_URL    = 'https://arcar.kftseng2oo1.workers.dev';
+var SD_T2I_URL = 'https://arcar.kftseng2oo1.workers.dev/sd/t2i';
+var SD_I2I_URL = 'https://arcar.kftseng2oo1.workers.dev/sd/i2i';
+
 // ─── Stability AI Styles ──────────────────────────────────────────────────────
 var SD_STYLES = [
   {
@@ -1579,13 +1572,21 @@ async function generateWithSD(idx, count) {
     });
 
     if (!resp.ok) {
-      var errData = await resp.json();
-      throw new Error(errData.message || errData.error || ('HTTP ' + resp.status));
+      var errStatus = resp.status;
+      var errMsg = 'HTTP ' + errStatus;
+      try {
+        var errData = await resp.clone().json();
+        errMsg = errData.message || errData.error || errMsg;
+      } catch(ex) {}
+      if (errStatus === 404) errMsg = 'Worker 路由未找到 — 請先更新部署 arcar Worker';
+      if (errStatus === 401) errMsg = 'API Key 無效 — 請確認 Worker 環境變數 STABILITY_API_KEY';
+      if (errStatus === 402) errMsg = 'Stability AI 餘額不足 — 請充値';
+      throw new Error(errMsg);
     }
 
     var data = await resp.json();
     var imgBase64 = (data.artifacts && data.artifacts[0]) ? data.artifacts[0].base64 : null;
-    if (!imgBase64) throw new Error('未收到圖片資料');
+    if (!imgBase64) throw new Error('API 未回傳圖片 — 請確認 Worker STABILITY_API_KEY 已設定');
 
     var dataUrl = 'data:image/png;base64,' + imgBase64;
     var conformedUrl = await conformToLineSpec(dataUrl, 370, 320, 10);
@@ -1864,7 +1865,7 @@ async function generateOne(idx, prompt, name) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        max_tokens: 4096,
         messages: [{
           role: 'user',
           content: 'You are an expert LINE sticker designer. Generate an SVG sticker illustration based on this description:\n\n' + prompt + '\n\nRequirements:\n- SVG format, viewBox=\'0 0 370 320\'\n- Cute, expressive, LINE sticker style\n- White or very light background rectangle\n- Main character centered, taking up 60-80% of space\n- Bold outlines, vibrant colors\n- Simple, clear design\n- No text whatsoever\n- Include emotions through body language and facial expressions\n\nRespond with ONLY the SVG code, starting with <svg and ending with </svg>. No explanation, no markdown.'
@@ -1896,20 +1897,39 @@ async function generateOne(idx, prompt, name) {
       throw new Error('Invalid SVG');
     }
   } catch (e) {
-    // Fallback: generate a placeholder SVG sticker
-    const slot = document.getElementById('aislot-' + idx);
-    if (!slot) return;
-    const fallbackSvg = generateFallbackSvg(idx);
-    const dataUrl = await svgToDataUrl(fallbackSvg, 370, 320);
-    var _fbUrl = encodeURIComponent(dataUrl);
-    var _fbName = encodeURIComponent('sticker_' + (idx + 1));
-    slot.innerHTML =
-      '<span class="slot-num">' + (idx + 1) + '</span>' +
-      '<img src="' + dataUrl + '" alt="sticker">' +
-      '<div class="slot-actions">' +
-      '<button class="btn btn-sm btn-primary" onclick="openModal(\'' + _fbUrl + '\',-1,\'' + _fbName + '\')">✏️ 加文字加入</button>' +
-      '<button class="btn btn-sm btn-secondary" onclick="addToKit(\'' + _fbUrl + '\',\'' + _fbName + '\')">＋ 直接加入</button>' +
-      '</div>';
+    var errDetail = e.message || String(e);
+    var errHint = '';
+    if (errDetail.indexOf('fetch') >= 0 || errDetail.indexOf('network') >= 0 || errDetail === 'Failed to fetch') {
+      errHint = 'Worker CORS 或網路問題';
+    } else if (errDetail.indexOf('401') >= 0) {
+      errHint = 'API Key 無效';
+    } else if (errDetail.indexOf('SVG') >= 0 || errDetail.indexOf('Invalid') >= 0) {
+      errHint = 'SVG 解析失敗 — 嘗試 Fallback';
+    }
+
+    // Try fallback SVG if it's an SVG parse error, otherwise show error
+    if (!errHint || errHint.indexOf('SVG') >= 0 || errHint.indexOf('Fallback') >= 0) {
+      const slot2 = document.getElementById('aislot-' + idx);
+      if (!slot2) return;
+      const fallbackSvg = generateFallbackSvg(idx);
+      const dataUrl2 = await svgToDataUrl(fallbackSvg, 370, 320);
+      var _fbUrl = encodeURIComponent(dataUrl2);
+      var _fbName = encodeURIComponent('sticker_' + (idx + 1));
+      slot2.innerHTML =
+        '<span class="slot-num">' + (idx + 1) + '</span>' +
+        '<img src="' + dataUrl2 + '" alt="sticker">' +
+        '<div class="slot-actions">' +
+        '<button class="btn btn-sm btn-primary" onclick="openModal(\'' + _fbUrl + '\',-1,\'' + _fbName + '\')">✏️ 加文字加入</button>' +
+        '<button class="btn btn-sm btn-secondary" onclick="addToKit(\'' + _fbUrl + '\',\'' + _fbName + '\')">＋ 直接加入</button>' +
+        '</div>';
+    } else {
+      const slot3 = document.getElementById('aislot-' + idx);
+      if (slot3) slot3.innerHTML =
+        '<div style="padding:10px;font-size:11px;color:var(--err);text-align:center;line-height:1.5;">' +
+        '⚠️ ' + errDetail + '<br><span style="color:var(--text2);font-size:10px;">' + errHint + '</span>' +
+        '<br><br><button class="btn btn-sm btn-secondary" onclick="testWorker()">🔍 診斷 Worker</button>' +
+        '</div>';
+    }
   }
 }
 
@@ -2136,9 +2156,7 @@ function conformToLineSpec(src, w, h, padding) {
       var canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       var ctx = canvas.getContext('2d');
-      // Transparent background (LINE requires PNG with transparency)
       ctx.clearRect(0, 0, w, h);
-      // Scale to fit within padded area
       var drawW = w - padding * 2;
       var drawH = h - padding * 2;
       var scale = Math.min(drawW / img.width, drawH / img.height);
@@ -2147,7 +2165,48 @@ function conformToLineSpec(src, w, h, padding) {
       var ox = (w - sw) / 2;
       var oy = (h - sh) / 2;
       ctx.drawImage(img, ox, oy, sw, sh);
-      resolve(canvas.toDataURL('image/png'));
+
+      // LINE 500KB limit enforcement
+      // PNG is lossless, so if over limit we use WebP-then-PNG trick
+      // or reduce canvas size slightly
+      var pngDataUrl = canvas.toDataURL('image/png');
+      var kb = Math.round(pngDataUrl.length * 0.75 / 1024);
+      if (kb <= 500) {
+        resolve(pngDataUrl);
+        return;
+      }
+      // Over 500KB: try WebP first (lossy, smaller), then convert back to PNG
+      // If WebP not supported, reduce draw scale iteratively
+      var webpDataUrl = canvas.toDataURL('image/webp', 0.85);
+      if (webpDataUrl.indexOf('image/webp') > -1) {
+        // Convert WebP to PNG via intermediate canvas
+        var img2 = new Image();
+        img2.onload = function() {
+          var c2 = document.createElement('canvas');
+          c2.width = w; c2.height = h;
+          var ctx2 = c2.getContext('2d');
+          ctx2.clearRect(0, 0, w, h);
+          ctx2.drawImage(img2, 0, 0);
+          resolve(c2.toDataURL('image/png'));
+        };
+        img2.src = webpDataUrl;
+        return;
+      }
+      // Fallback: shrink draw scale by 10% until under 500KB (max 3 tries)
+      var tries = 0;
+      var factor = 0.9;
+      function trySmaller() {
+        var c3 = document.createElement('canvas');
+        c3.width = w; c3.height = h;
+        var ctx3 = c3.getContext('2d');
+        ctx3.clearRect(0, 0, w, h);
+        ctx3.drawImage(img, ox + (sw*(1-factor))/2, oy + (sh*(1-factor))/2, sw*factor, sh*factor);
+        var d = c3.toDataURL('image/png');
+        var kb3 = Math.round(d.length * 0.75 / 1024);
+        if (kb3 <= 500 || tries >= 3) { resolve(d); return; }
+        tries++; factor *= 0.9; trySmaller();
+      }
+      trySmaller();
     };
     img.onerror = function() { resolve(src); };
     img.src = src;
@@ -2525,6 +2584,47 @@ function showToast(msg, type = 'success') {
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─── Worker Diagnostics ──────────────────────────────────────────────────────
+async function testWorker() {
+  showToast('診斷中，請稍候…', 'success');
+  var results = [];
+
+  // Test 1: root route (Anthropic)
+  try {
+    var r1 = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 5, messages: [{ role: 'user', content: 'hi' }] })
+    });
+    results.push('/ → HTTP ' + r1.status + (r1.status === 200 ? ' ✅' : r1.status === 401 ? ' ⚠️ Key無效' : ' ❓'));
+  } catch(e) {
+    results.push('/ → FAIL: ' + e.message + ' ❌ (CORS或網路問題)');
+  }
+
+  // Test 2: SD t2i route
+  try {
+    var r2 = await fetch(SD_T2I_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ping: true })
+    });
+    results.push('/sd/t2i → HTTP ' + r2.status + (r2.status === 404 ? ' ❌ 路由不存在' : ' ✅ 路由存在'));
+  } catch(e) {
+    results.push('/sd/t2i → FAIL: ' + e.message + ' ❌');
+  }
+
+  // Test 3: CORS preflight
+  try {
+    var r3 = await fetch(API_URL, { method: 'OPTIONS' });
+    var corsHeader = r3.headers.get('Access-Control-Allow-Origin');
+    results.push('CORS → ' + (corsHeader ? corsHeader + ' ✅' : '未設定 ❌'));
+  } catch(e) {
+    results.push('CORS → FAIL: ' + e.message + ' ❌');
+  }
+
+  alert('Worker 診斷結果:\n\n' + results.join('\n'));
+}
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 initCharThemes();
