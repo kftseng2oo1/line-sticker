@@ -1,0 +1,2538 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LINE 貼圖工作室</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --green: #00C300;
+  --green-dark: #00A000;
+  --green-light: #E8FFE8;
+  --dark: #0D1117;
+  --dark2: #161B22;
+  --dark3: #21262D;
+  --border: #30363D;
+  --text: #E6EDF3;
+  --text2: #8B949E;
+  --accent: #58E6A0;
+  --warn: #F0A030;
+  --err: #FF6B6B;
+  --card-bg: rgba(33,38,45,0.9);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--dark);
+  color: var(--text);
+  font-family: 'Noto Sans TC', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Background grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,195,0,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,195,0,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 16px 80px; }
+
+/* Header */
+header {
+  text-align: center;
+  padding: 48px 0 32px;
+  position: relative;
+}
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+.logo-icon {
+  width: 52px; height: 52px;
+  background: var(--green);
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  box-shadow: 0 0 30px rgba(0,195,0,0.4);
+}
+.logo h1 {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+.logo h1 span { color: var(--green); }
+header p {
+  color: var(--text2);
+  font-size: 14px;
+  font-family: 'Space Mono', monospace;
+}
+.spec-tag {
+  display: inline-block;
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  color: var(--accent);
+  margin: 4px 3px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  background: var(--dark2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+.tab-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text2);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+}
+.tab-btn.active {
+  background: var(--green);
+  color: #000;
+  font-weight: 700;
+  box-shadow: 0 0 15px rgba(0,195,0,0.3);
+}
+.tab-btn:hover:not(.active) { background: var(--dark3); color: var(--text); }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Section card */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(8px);
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--green);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-family: 'Space Mono', monospace;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title::before {
+  content: '';
+  width: 3px; height: 14px;
+  background: var(--green);
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* AI panel */
+.ai-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media(max-width:600px){ .ai-form { grid-template-columns: 1fr; } }
+
+label.field-label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; font-family: 'Space Mono', monospace; }
+input[type=text], textarea, select {
+  width: 100%;
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 14px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border .2s;
+}
+input[type=text]:focus, textarea:focus, select:focus { border-color: var(--green); }
+textarea { resize: vertical; min-height: 80px; }
+
+.ai-form-full { grid-column: 1/-1; }
+
+.style-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 8px;
+}
+.style-chip {
+  padding: 8px 6px;
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all .2s;
+  user-select: none;
+}
+.style-chip .emoji { font-size: 20px; display: block; margin-bottom: 4px; }
+.style-chip:hover { border-color: var(--green); }
+.style-chip.selected { border-color: var(--green); background: rgba(0,195,0,0.12); color: var(--green); }
+
+/* Preset phrases */
+.phrase-cats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.phrase-cat-btn {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--dark3);
+  color: var(--text2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+.phrase-cat-btn.active, .phrase-cat-btn:hover {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(0,195,0,0.08);
+}
+.phrase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 7px;
+}
+.phrase-chip {
+  padding: 8px 10px;
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all .15s;
+  line-height: 1.3;
+}
+.phrase-chip:hover {
+  border-color: var(--green);
+  background: rgba(0,195,0,0.07);
+  color: var(--text);
+}
+.phrase-chip .pe { font-size: 16px; flex-shrink: 0; }
+.phrase-chip .pt { color: var(--text2); font-size: 11px; display: block; }
+.phrase-chip .pm { color: var(--text); font-weight: 500; }
+
+.btn {
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: none;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all .2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-primary {
+  background: var(--green);
+  color: #000;
+  box-shadow: 0 4px 20px rgba(0,195,0,0.3);
+}
+.btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+.btn-primary:disabled { background: var(--border); color: var(--text2); cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-secondary {
+  background: var(--dark3);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { border-color: var(--green); color: var(--green); }
+.btn-danger {
+  background: rgba(255,107,107,0.1);
+  color: var(--err);
+  border: 1px solid rgba(255,107,107,0.3);
+}
+.btn-danger:hover { background: rgba(255,107,107,0.2); }
+
+.btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 7px; }
+
+/* Progress */
+.progress-bar {
+  height: 4px;
+  background: var(--dark3);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--accent));
+  border-radius: 2px;
+  transition: width .4s ease;
+  width: 0%;
+}
+
+/* Sticker grid */
+.sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+}
+.sticker-slot {
+  aspect-ratio: 370/320;
+  border: 1.5px dashed var(--border);
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s;
+  background: var(--dark3);
+  cursor: pointer;
+}
+.sticker-slot:hover { border-color: var(--green); }
+.sticker-slot img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.sticker-slot .slot-num {
+  position: absolute;
+  top: 4px; left: 6px;
+  font-size: 10px;
+  font-family: 'Space Mono', monospace;
+  color: var(--text2);
+  background: rgba(0,0,0,0.5);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.sticker-slot .slot-actions {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-direction: column;
+}
+.sticker-slot:hover .slot-actions { display: flex; }
+.sticker-slot.empty .slot-num { display: none; }
+.sticker-slot.empty::after {
+  content: '+';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--border);
+}
+
+.slot-generating {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--dark3);
+}
+.spinner {
+  width: 24px; height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  background: var(--dark3);
+}
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--green);
+  background: rgba(0,195,0,0.05);
+}
+.upload-zone .up-icon { font-size: 48px; margin-bottom: 12px; }
+.upload-zone p { color: var(--text2); font-size: 14px; margin-top: 6px; }
+.upload-zone strong { color: var(--text); }
+
+/* Stats bar */
+.stats-bar {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 14px 20px;
+  background: var(--dark2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+.stat-item { font-size: 13px; }
+.stat-item .val {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  color: var(--green);
+  font-size: 16px;
+}
+.stat-item .lbl { color: var(--text2); font-size: 11px; display: block; }
+
+/* Export section */
+.export-card {
+  background: linear-gradient(135deg, rgba(0,195,0,0.08), rgba(88,230,160,0.05));
+  border: 1px solid rgba(0,195,0,0.3);
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 20px;
+}
+.export-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.export-info h3 { font-size: 18px; margin-bottom: 6px; }
+.export-info p { color: var(--text2); font-size: 13px; }
+.export-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.pack-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.pack-opt {
+  padding: 10px;
+  background: var(--dark3);
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all .2s;
+}
+.pack-opt:hover { border-color: var(--green); }
+.pack-opt.selected { border-color: var(--green); background: rgba(0,195,0,0.1); color: var(--green); font-weight: 700; }
+.pack-opt small { display: block; color: var(--text2); font-size: 11px; margin-top: 2px; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--dark2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: 14px;
+  z-index: 999;
+  display: none;
+  animation: slideUp .3s ease;
+  max-width: 300px;
+}
+.toast.show { display: block; }
+.toast.success { border-color: var(--green); color: var(--green); }
+.toast.error { border-color: var(--err); color: var(--err); }
+.toast.warn { border-color: var(--warn); color: var(--warn); }
+@keyframes slideUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+
+/* Divider */
+hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+/* Preview Modal */
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-bg.open { display: flex; }
+.modal {
+  background: var(--dark2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 480px;
+  width: 100%;
+  position: relative;
+}
+.modal img { width: 100%; border-radius: 10px; image-rendering: auto; }
+.modal-close {
+  position: absolute;
+  top: 12px; right: 12px;
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text2);
+  font-size: 18px;
+  width: 32px; height: 32px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-close:hover { color: var(--text); }
+
+/* hidden file input */
+#fileInput, #uploadInput { display: none; }
+
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+.row-end { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: flex-end; margin-top: 16px; }
+
+.info-box {
+  background: rgba(240,160,48,0.08);
+  border: 1px solid rgba(240,160,48,0.25);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--warn);
+  margin-bottom: 16px;
+}
+
+/* Character Theme Grid */
+.char-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.char-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 6px 8px;
+  background: var(--dark3);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all .18s;
+  user-select: none;
+  text-align: center;
+}
+.char-card:hover {
+  border-color: var(--green);
+  background: rgba(0,195,0,0.07);
+  transform: translateY(-2px);
+}
+.char-card.selected {
+  border-color: var(--green);
+  background: rgba(0,195,0,0.14);
+  box-shadow: 0 0 12px rgba(0,195,0,0.2);
+}
+.char-card .cc-icon { font-size: 28px; line-height: 1; }
+.char-card .cc-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.char-card .cc-desc { font-size: 10px; color: var(--text2); line-height: 1.3; }
+.char-card.selected .cc-name { color: var(--green); }
+
+
+/* Modal phrase quick chips */
+.modal-phrase-chip {
+  padding: 4px 10px;
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s;
+  color: var(--text);
+}
+.modal-phrase-chip:hover {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(0,195,0,0.08);
+}
+/* Color swatch */
+.color-swatch {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+.color-swatch.selected { border-color: var(--text); transform: scale(1.2); }
+/* Position button */
+.pos-btn {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  background: var(--dark3);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+}
+.pos-btn:hover { border-color: var(--green); }
+.pos-btn.selected { border-color: var(--green); background: rgba(0,195,0,0.2); }
+
+
+/* Spec check bar */
+.spec-check-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.spec-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  flex: 1;
+  min-width: 140px;
+}
+.spec-icon { font-size: 16px; }
+
+/* Creators Market steps */
+.creators-steps { display: flex; flex-direction: column; gap: 12px; }
+.cstep {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.cstep-num {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #000;
+  font-weight: 900;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.cstep-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.cstep-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
+
+
+/* Pack tab row */
+.pack-tab-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.pack-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--dark2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all .18s;
+  min-width: 72px;
+  position: relative;
+}
+.pack-tab:hover { border-color: var(--green); }
+.pack-tab.active {
+  border-color: var(--green);
+  background: rgba(0,195,0,0.1);
+  box-shadow: 0 0 12px rgba(0,195,0,0.15);
+}
+.pack-tab .pt-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+.pack-tab.active .pt-label { color: var(--green); }
+.pack-tab .pt-sub {
+  font-size: 10px;
+  color: var(--text2);
+  font-family: "Space Mono", monospace;
+  margin-top: 2px;
+}
+.pack-tab .pt-badge {
+  position: absolute;
+  top: -6px; right: -6px;
+  background: var(--green);
+  color: #000;
+  font-size: 9px;
+  font-weight: 700;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pack-tab .pt-mini-bar {
+  width: 100%;
+  height: 3px;
+  background: var(--dark3);
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.pack-tab .pt-mini-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 2px;
+  transition: width .3s;
+}
+
+/* Style mode tabs (Claude vs Stability AI) */
+.style-mode-tabs {
+  display: flex;
+  background: var(--dark3);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+  margin-bottom: 14px;
+}
+.style-mode-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text2);
+  font-family: "Noto Sans TC", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s;
+}
+.style-mode-btn.active {
+  background: var(--dark2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+/* AI Style cards (Stable Diffusion) */
+.sd-style-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.sd-style-card {
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all .18s;
+  background: var(--dark3);
+}
+.sd-style-card:hover { border-color: var(--green); transform: translateY(-2px); }
+.sd-style-card.selected { border-color: var(--green); box-shadow: 0 0 14px rgba(0,195,0,0.25); }
+.sd-style-card .sdc-preview {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  position: relative;
+  overflow: hidden;
+}
+.sd-style-card .sdc-info {
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+}
+.sd-style-card .sdc-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.sd-style-card .sdc-desc {
+  font-size: 10px;
+  color: var(--text2);
+  line-height: 1.4;
+}
+.sd-style-card.selected .sdc-name { color: var(--green); }
+
+/* Stability AI key input */
+.api-key-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.api-key-row input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: "Space Mono", monospace;
+  font-size: 12px;
+  outline: none;
+}
+.api-key-row .key-icon { font-size: 18px; flex-shrink: 0; }
+
+</style>
+
+<!-- PWA Meta — auto-injected by PWA 打包神器 -->
+<meta name="application-name" content="My PWA App">
+<meta name="description" content="">
+<meta name="theme-color" content="#1a73e8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MyApp">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<script>if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').then(function(r){console.log('[SW] registered:',r.scope)}).catch(function(e){console.warn('[SW] failed:',e)});});}</script>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon" style="background:none;box-shadow:none;padding:0;overflow:visible;">
+        <svg width="52" height="52" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="hbg" cx="40%" cy="35%" r="70%">
+              <stop offset="0%" stop-color="#1a2a1a"/>
+              <stop offset="100%" stop-color="#050d05"/>
+            </radialGradient>
+            <radialGradient id="hbbl" cx="45%" cy="40%" r="60%">
+              <stop offset="0%" stop-color="#2ede6a"/>
+              <stop offset="100%" stop-color="#009900"/>
+            </radialGradient>
+            <clipPath id="hclip">
+              <rect x="4" y="4" width="192" height="192" rx="42"/>
+            </clipPath>
+          </defs>
+          <rect x="4" y="4" width="192" height="192" rx="42" fill="url(#hbg)"/>
+          <g clip-path="url(#hclip)">
+            <rect x="28" y="38" width="120" height="90" rx="18" fill="url(#hbbl)"/>
+            <path d="M 50 128 L 38 148 L 72 130 Z" fill="#00C300"/>
+            <rect x="36" y="50" width="44" height="38" rx="7" fill="#fff" opacity="0.95"/>
+            <ellipse cx="58" cy="68" rx="14" ry="13" fill="#FFD54F"/>
+            <ellipse cx="53" cy="67" rx="3" ry="3.5" fill="#333"/>
+            <ellipse cx="63" cy="67" rx="3" ry="3.5" fill="#333"/>
+            <circle cx="54" cy="66" r="1.2" fill="#fff"/>
+            <circle cx="64" cy="66" r="1.2" fill="#fff"/>
+            <ellipse cx="58" cy="72" rx="2" ry="1.5" fill="#FF7043"/>
+            <path d="M 55 74 Q 58 78 61 74" stroke="#333" stroke-width="1" fill="none" stroke-linecap="round"/>
+            <rect x="90" y="52" width="50" height="16" rx="5" fill="#fff" opacity="0.22"/>
+            <rect x="90" y="74" width="50" height="16" rx="5" fill="#fff" opacity="0.22"/>
+            <rect x="90" y="96" width="50" height="16" rx="5" fill="#fff" opacity="0.32"/>
+            <text x="115" y="109" font-family="sans-serif" font-size="10" font-weight="700" fill="#003300" text-anchor="middle">AI 生成</text>
+            <g transform="translate(160,50)">
+              <path d="M0,-10 L2.5,-2.5 L10,0 L2.5,2.5 L0,10 L-2.5,2.5 L-10,0 L-2.5,-2.5 Z" fill="#ffe066"/>
+            </g>
+            <g transform="translate(175,85)">
+              <path d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="#80ff80" opacity="0.9"/>
+            </g>
+            <g transform="translate(22,48)">
+              <path d="M0,-6 L1.5,-1.5 L6,0 L1.5,1.5 L0,6 L-1.5,1.5 L-6,0 L-1.5,-1.5 Z" fill="#ffe066" opacity="0.8"/>
+            </g>
+            <rect x="130" y="148" width="44" height="36" rx="6" fill="#0d1a0d" stroke="#00C300" stroke-width="1.5"/>
+            <rect x="126" y="140" width="52" height="12" rx="4" fill="#00C300"/>
+            <rect x="149" y="137" width="8" height="16" rx="2" fill="#009900"/>
+            <text x="152" y="173" font-family="monospace" font-size="9" font-weight="700" fill="#00C300" text-anchor="middle">ZIP</text>
+            <g transform="rotate(-38,108,162)">
+              <rect x="96" y="148" width="8" height="34" rx="2.5" fill="#e8f5e9"/>
+              <rect x="95" y="181" width="10" height="6" rx="1.5" fill="#b0bec5"/>
+              <ellipse cx="100" cy="194" rx="4.5" ry="7" fill="#00e676"/>
+            </g>
+          </g>
+          <rect x="4" y="4" width="192" height="192" rx="42" fill="none" stroke="#00C300" stroke-width="2" opacity="0.4"/>
+        </svg>
+      </div>
+      <h1>LINE <span>貼圖</span>工作室</h1>
+    </div>
+    <p>AI 生成 × 上傳自訂 × 打包輸出</p>
+    <div style="margin-top:10px;">
+      <span class="spec-tag">主貼圖 370×320px</span>
+      <span class="spec-tag">PNG 透明背景</span>
+      <span class="spec-tag">最大 500KB/張</span>
+      <span class="spec-tag">8〜40 張/套</span>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('ai')">🤖 AI 生成</button>
+    <button class="tab-btn" onclick="switchTab('upload')">📁 上傳圖片</button>
+    <button class="tab-btn" onclick="switchTab('manage')">🗂 管理貼圖</button>
+    <button class="tab-btn" onclick="switchTab('export')">📦 匯出 ZIP</button>
+  </div>
+
+  <!-- AI Tab -->
+  <div id="tab-ai" class="tab-panel active">
+    <div class="card">
+      <div class="card-title">AI 圖案描述</div>
+      <div class="ai-form">
+        <div class="ai-form-full">
+          <label class="field-label">🎭 貼圖主題角色 <span style="color:var(--text2);font-weight:400;">（點選或自行輸入）</span></label>
+          <div class="char-theme-grid" id="charThemeGrid"></div>
+          <div style="margin-top:10px;position:relative;">
+            <input type="text" id="aiChar" placeholder="✏️ 自訂角色描述…" value="" oninput="onCharInput()">
+            <span id="charClearBtn" onclick="clearCharSel()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text2);font-size:18px;line-height:1;display:none;">✕</span>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">情緒/動作</label>
+          <input type="text" id="aiEmotion" placeholder="例：開心、生氣、睡覺、吃飯">
+        </div>
+        <div class="ai-form-full">
+          <label class="field-label">額外描述（選填）</label>
+          <textarea id="aiExtra" placeholder="例：戴著帽子、背景純色、Q版卡通風格"></textarea>
+        </div>
+        <div class="ai-form-full">
+          <label class="field-label">💬 常用語快選 <span style="color:var(--text2);font-weight:400;">（點擊自動填入）</span></label>
+          <div class="phrase-cats" id="phraseCats"></div>
+          <div class="phrase-grid" id="phraseGrid"></div>
+        </div>
+        <div class="ai-form-full">
+          <label class="field-label">🎨 生成引擎 &amp; 風格</label>
+          <div class="style-mode-tabs">
+            <button class="style-mode-btn active" id="modeClaudeBtn" onclick="switchStyleMode('claude')">🤖 Claude SVG</button>
+            <button class="style-mode-btn" id="modeSDBtn" onclick="switchStyleMode('sd')">🖼 Stability AI 照片轉風格</button>
+          </div>
+
+          <!-- Claude mode: original style chips -->
+          <div id="claudeStylePanel">
+            <div class="style-grid" id="styleGrid"></div>
+          </div>
+
+          <!-- Stability AI mode -->
+          <div id="sdStylePanel" style="display:none;">
+            <div class="info-box" style="margin-bottom:12px;">
+              🔐 透過 <strong>arcar Worker</strong> 代理呼叫，API Key 安全存於 Cloudflare 環境變數，無需前端輸入
+            </div>
+            <div class="sd-style-grid" id="sdStyleGrid"></div>
+            <!-- Upload photo for img2img -->
+            <div style="margin-top:10px;">
+              <label class="field-label">📷 上傳參考照片（img2img）</label>
+              <div class="upload-zone" id="sdUploadZone" onclick="document.getElementById('sdPhotoInput').click()"
+                style="padding:20px;margin-top:6px;">
+                <div style="font-size:28px;margin-bottom:6px;">📸</div>
+                <strong style="font-size:13px;">點擊上傳人像或物體照片</strong>
+                <p>將照片轉成所選動漫風格</p>
+              </div>
+              <input type="file" id="sdPhotoInput" accept="image/*" style="display:none;" onchange="loadSDPhoto(event)">
+              <canvas id="sdPhotoCanvas" style="display:none;"></canvas>
+              <img id="sdPhotoPreview" style="max-width:120px;border-radius:8px;margin-top:8px;display:none;" alt="">
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr>
+      <div class="row">
+        <div>
+          <label class="field-label">每次生成數量</label>
+          <select id="genCount">
+            <option value="1">1 張</option>
+            <option value="2">2 張</option>
+            <option value="4" selected>4 張</option>
+            <option value="8">8 張</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label class="field-label">生成進度</label>
+          <div class="progress-bar"><div class="progress-fill" id="genProgress"></div></div>
+        </div>
+      </div>
+      <div class="row-end">
+        <button class="btn btn-secondary" onclick="previewPrompt()">👁 預覽 Prompt</button>
+        <button class="btn btn-primary" id="genBtn" onclick="generateStickers()">✨ AI 生成貼圖</button>
+      </div>
+    </div>
+
+    <!-- Generated preview -->
+    <div class="card" id="aiResultCard" style="display:none;">
+      <div class="card-title">生成結果 — 選擇加入貼圖套件</div>
+      <div class="sticker-grid" id="aiResultGrid"></div>
+    </div>
+  </div>
+
+  <!-- Upload Tab -->
+  <div id="tab-upload" class="tab-panel">
+    <div class="card">
+      <div class="card-title">上傳你的圖片</div>
+      <div class="info-box">⚠️ 建議圖片為 PNG 透明背景，將自動縮放至 370×320px 符合 LINE 規格</div>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('uploadInput').click()"
+        ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFiles(event)">
+        <div class="up-icon">🖼️</div>
+        <strong>點擊選擇圖片或拖放至此</strong>
+        <p>支援 PNG / JPG / WEBP，可多選</p>
+      </div>
+      <input type="file" id="uploadInput" accept="image/*" multiple onchange="handleUpload(event)">
+    </div>
+
+    <div class="card" id="uploadPreviewCard" style="display:none;">
+      <div class="card-title">上傳預覽 — 點擊加入套件</div>
+      <div class="sticker-grid" id="uploadPreviewGrid"></div>
+    </div>
+  </div>
+
+  <!-- Manage Tab -->
+  <div id="tab-manage" class="tab-panel">
+
+    <!-- Overall stats -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="val" id="statCount">0</span>
+        <span class="lbl">貼圖總數</span>
+      </div>
+      <div class="stat-item">
+        <span class="val" id="statTarget">8</span>
+        <span class="lbl">目標張數</span>
+      </div>
+      <div class="stat-item" style="flex:1;">
+        <div style="width:100%;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:11px;color:var(--text2);">整體完成度</span>
+            <span class="val" id="statPct" style="font-size:13px;">0%</span>
+          </div>
+          <div style="height:6px;background:var(--dark3);border-radius:3px;overflow:hidden;">
+            <div id="statBar" style="height:100%;background:linear-gradient(90deg,#00C300,#58E6A0);border-radius:3px;width:0%;transition:width .4s;"></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm btn-secondary" onclick="clearAll()">🗑 清除</button>
+        <button class="btn btn-sm btn-primary" onclick="switchTab('export')">📦 匯出 →</button>
+      </div>
+    </div>
+
+    <!-- Pack size selector tabs -->
+    <div class="pack-tab-row" id="packTabRow"></div>
+
+    <!-- Active pack card -->
+    <div class="card" id="manageCard">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div class="card-title" style="margin-bottom:2px;" id="manageCardTitle">套件 A — 8 張</div>
+          <div id="manageCardSub" style="font-size:12px;color:var(--text2);">0 / 8 張已填入</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <!-- Ring progress -->
+          <svg width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="18" fill="none" stroke="#21262D" stroke-width="5"/>
+            <circle cx="22" cy="22" r="18" fill="none" stroke="#00C300" stroke-width="5"
+              stroke-dasharray="113" id="ringProgress" stroke-dashoffset="113"
+              stroke-linecap="round" transform="rotate(-90 22 22)" style="transition:stroke-dashoffset .4s;"/>
+            <text x="22" y="26" text-anchor="middle" font-size="10" font-weight="700" fill="#00C300" id="ringText">0%</text>
+          </svg>
+          <button class="btn btn-sm btn-secondary" onclick="addPackSet()">＋ 新增套件</button>
+        </div>
+      </div>
+      <div class="sticker-grid" id="mainGrid"></div>
+    </div>
+  </div>
+
+  <!-- Export Tab -->
+  <div id="tab-export" class="tab-panel">
+
+    <!-- ① 尺寸規格自動修正 -->
+    <div class="card">
+      <div class="card-title">⚙️ 匯出設定</div>
+      <div class="spec-check-bar">
+        <div class="spec-item">
+          <span class="spec-icon" id="specIcon1">✅</span>
+          <span class="spec-lbl">主貼圖 370×320px</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-icon" id="specIcon2">✅</span>
+          <span class="spec-lbl">10px 留白邊距</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-icon" id="specIcon3">✅</span>
+          <span class="spec-lbl">PNG 透明背景</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-icon" id="specIcon4">✅</span>
+          <span class="spec-lbl">≤500KB / 張</span>
+        </div>
+      </div>
+      <div class="info-box" style="margin-top:12px;margin-bottom:0;">
+        🔧 匯出時自動裁切並套用 10px 留白，確保符合 LINE 官方規格
+      </div>
+    </div>
+
+    <!-- ② Pack settings -->
+    <div class="card">
+      <div class="card-title">📋 套件設定</div>
+      <label class="field-label">套件名稱（英文，用於資料夾名稱）</label>
+      <input type="text" id="packName" placeholder="my-sticker-pack" value="my-sticker-pack" style="margin-bottom:16px;">
+
+      <label class="field-label">套件張數</label>
+      <div class="pack-options" id="packOptions">
+        <div class="pack-opt selected" data-n="8" onclick="selectPack(this)">8 張<small>基本</small></div>
+        <div class="pack-opt" data-n="16" onclick="selectPack(this)">16 張<small>標準</small></div>
+        <div class="pack-opt" data-n="24" onclick="selectPack(this)">24 張<small>進階</small></div>
+        <div class="pack-opt" data-n="32" onclick="selectPack(this)">32 張<small>豪華</small></div>
+        <div class="pack-opt" data-n="40" onclick="selectPack(this)">40 張<small>完整版</small></div>
+      </div>
+      <label class="field-label" style="margin-top:8px;">目前貼圖數：<span id="exportCount" style="color:var(--green);font-family:'Space Mono',monospace;">0</span> 張</label>
+    </div>
+
+    <!-- ③ Download ZIP -->
+    <div class="export-card">
+      <div class="export-row">
+        <div class="export-info">
+          <h3>📦 下載 ZIP 套件</h3>
+          <p>含規格驗證主貼圖、main image (240×240)、tab image (96×74)</p>
+        </div>
+        <div class="export-actions">
+          <button class="btn btn-secondary" onclick="previewPack()">🔍 預覽</button>
+          <button class="btn btn-primary" onclick="exportZip()">⬇️ 下載 ZIP</button>
+        </div>
+      </div>
+      <div class="progress-bar" style="margin-top:16px;"><div class="progress-fill" id="exportProgress"></div></div>
+      <p id="exportStatus" style="font-size:12px;color:var(--text2);margin-top:8px;font-family:'Space Mono',monospace;"></p>
+    </div>
+
+    <!-- ④ Share to LINE -->
+    <div class="card" style="margin-top:16px;">
+      <div class="card-title">📤 分享貼圖</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">將單張貼圖預覽分享至 LINE 聊天室，讓朋友搶先看</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <select id="shareSelectSticker" style="flex:1;min-width:140px;">
+          <option value="">選擇要分享的貼圖…</option>
+        </select>
+        <button class="btn btn-primary" onclick="shareToLine()" style="background:#00C300;gap:8px;">
+          <svg width="20" height="20" viewBox="0 0 40 40" fill="white"><path d="M20 2C10.06 2 2 9.37 2 18.4c0 8.1 7.17 14.88 16.88 16.18.66.14 1.55.44 1.78 1 .2.52.13 1.33.06 1.85l-.29 1.73c-.09.52-.41 2.03 1.78 1.11 2.19-.93 11.82-6.96 16.13-11.92C39.44 25.56 38 22.14 38 18.4 38 9.37 29.94 2 20 2z"/></svg>
+          傳送至 LINE
+        </button>
+        <button class="btn btn-secondary" onclick="copyShareImg()">📋 複製圖片</button>
+      </div>
+      <div id="sharePreviewArea" style="margin-top:12px;display:none;">
+        <img id="sharePreviewImg" style="max-width:180px;border-radius:10px;border:1px solid var(--border);" alt="">
+      </div>
+    </div>
+
+    <!-- ⑤ LINE Creators Market 導引 -->
+    <div class="card" style="margin-top:4px;background:linear-gradient(135deg,rgba(0,195,0,0.06),rgba(88,230,160,0.04));border-color:rgba(0,195,0,0.25);">
+      <div class="card-title">🏪 上架 LINE Creators Market</div>
+      <div class="creators-steps">
+        <div class="cstep">
+          <div class="cstep-num">1</div>
+          <div>
+            <div class="cstep-title">下載 ZIP 並解壓縮</div>
+            <div class="cstep-desc">點擊上方「下載 ZIP」，解壓後取得所有 PNG 檔案</div>
+          </div>
+        </div>
+        <div class="cstep">
+          <div class="cstep-num">2</div>
+          <div>
+            <div class="cstep-title">登入 LINE Creators Market</div>
+            <div class="cstep-desc">前往官網，用 LINE 帳號登入</div>
+            <a href="https://creator.line.me/zh-hant/" target="_blank" class="btn btn-sm btn-primary" style="margin-top:8px;display:inline-flex;">
+              <svg width="14" height="14" viewBox="0 0 40 40" fill="white"><path d="M20 2C10.06 2 2 9.37 2 18.4c0 8.1 7.17 14.88 16.88 16.18.66.14 1.55.44 1.78 1 .2.52.13 1.33.06 1.85l-.29 1.73c-.09.52-.41 2.03 1.78 1.11 2.19-.93 11.82-6.96 16.13-11.92C39.44 25.56 38 22.14 38 18.4 38 9.37 29.94 2 20 2z"/></svg>
+              開啟 Creators Market
+            </a>
+          </div>
+        </div>
+        <div class="cstep">
+          <div class="cstep-num">3</div>
+          <div>
+            <div class="cstep-title">新增貼圖 → 上傳圖片</div>
+            <div class="cstep-desc">點選「新增貼圖」，填入名稱，逐張上傳主貼圖 PNG</div>
+          </div>
+        </div>
+        <div class="cstep">
+          <div class="cstep-num">4</div>
+          <div>
+            <div class="cstep-title">上傳 main_image & tab_image</div>
+            <div class="cstep-desc">對應主圖（240×240）與標籤圖（96×74），皆在 ZIP 包內</div>
+          </div>
+        </div>
+        <div class="cstep">
+          <div class="cstep-num">5</div>
+          <div>
+            <div class="cstep-title">送出審核</div>
+            <div class="cstep-desc">填寫貼圖描述、設定售價，送審後等待 LINE 官方審核（約 1-2 週）</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:16px;padding:12px;background:rgba(240,160,48,0.08);border:1px solid rgba(240,160,48,0.2);border-radius:8px;font-size:12px;color:var(--warn);">
+        ⚠️ <strong>審核注意事項：</strong>不得含有版權角色、真實人物、政治內容或違規文字。背景建議透明或純白。
+      </div>
+    </div>
+
+    <div class="card" id="packPreviewCard" style="display:none;">
+      <div class="card-title">套件預覽</div>
+      <div class="sticker-grid" id="packPreviewGrid"></div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- Text-overlay Modal -->
+<div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+  <div class="modal" style="max-width:520px;">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div style="font-size:13px;font-weight:700;color:var(--green);font-family:'Space Mono',monospace;margin-bottom:12px;letter-spacing:1px;">✏️ 疊加文字</div>
+
+    <!-- Canvas preview -->
+    <canvas id="modalCanvas" width="370" height="320"
+      style="width:100%;border-radius:10px;background:#fff;display:block;"></canvas>
+
+    <!-- Quick phrase row -->
+    <div style="margin-top:12px;">
+      <div style="font-size:11px;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:7px;">💬 常用語快選</div>
+      <div id="modalPhraseRow" style="display:flex;gap:6px;flex-wrap:wrap;max-height:80px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- Text input -->
+    <div style="margin-top:12px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:flex-end;">
+      <div>
+        <div style="font-size:11px;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:5px;">自訂文字</div>
+        <input type="text" id="overlayText" placeholder="輸入要疊加的文字…"
+          oninput="renderOverlay()" style="width:100%;">
+      </div>
+      <button class="btn btn-sm btn-secondary" onclick="clearOverlay()">清除</button>
+    </div>
+
+    <!-- Style controls -->
+    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+      <div>
+        <div style="font-size:11px;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:5px;">字體大小</div>
+        <input type="range" id="overlaySize" min="20" max="80" value="44"
+          oninput="document.getElementById('overlaySizeVal').textContent=this.value;renderOverlay()"
+          style="width:100%;accent-color:var(--green);">
+        <span id="overlaySizeVal" style="font-size:11px;color:var(--accent);font-family:'Space Mono',monospace;">44</span>px
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:5px;">文字顏色</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;" id="colorPicker"></div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:5px;">位置</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;" id="posPicker"></div>
+      </div>
+    </div>
+
+    <!-- Stroke toggle -->
+    <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
+      <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;">
+        <input type="checkbox" id="overlayStroke" checked onchange="renderOverlay()"
+          style="accent-color:var(--green);width:15px;height:15px;">
+        白色描邊（讓文字更清晰）
+      </label>
+    </div>
+
+    <!-- Actions -->
+    <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-sm btn-secondary" id="modalAddNoText" onclick="addFromModal(false)">＋ 不加文字</button>
+      <button class="btn btn-sm btn-primary" id="modalAddWithText" onclick="addFromModal(true)">✅ 加入套件</button>
+      <button class="btn btn-sm btn-danger" id="modalRemoveBtn" style="display:none" onclick="removeFromModal()">✕ 移除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- JSZip -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+const stickers = []; // { id, dataUrl, name }
+let selectedPackN = 8;
+let activeModal = null;
+var currentStyleMode = 'claude'; // 'claude' | 'sd'
+var sdPhotoDataUrl = null;
+
+// ─── Stability AI Styles ──────────────────────────────────────────────────────
+var SD_STYLES = [
+  {
+    id: 'shinkai',
+    icon: '🌸',
+    bg: 'linear-gradient(135deg,#1a1a4e,#2d5a8e,#87ceeb)',
+    name: '新海誠風',
+    desc: '日系動漫電影風 細膩光線粒子感',
+    prompt: 'Makoto Shinkai anime style, detailed sky, cinematic lighting, soft particle effects, Japanese animation film aesthetic, vibrant colors, atmospheric depth',
+    negPrompt: 'realistic, 3d render, western cartoon, ugly, blurry'
+  },
+  {
+    id: 'cyberpunk',
+    icon: '⚡',
+    bg: 'linear-gradient(135deg,#0a0a1a,#1a0a3a,#ff00ff33)',
+    name: '賽博龐克',
+    desc: 'Cyberpunk 霓虹 未來都市暗黑風',
+    prompt: 'cyberpunk style, neon lights, dark futuristic city, glowing signs, rain reflections, high contrast, blade runner aesthetic, purple and cyan neon',
+    negPrompt: 'bright daylight, natural, realistic photo, soft colors'
+  },
+  {
+    id: 'pixar',
+    icon: '🎬',
+    bg: 'linear-gradient(135deg,#ffe066,#ff8c00,#ff4500)',
+    name: '皮克斯 3D',
+    desc: '玩具總動員風格 Q版3D卡通人物',
+    prompt: 'Pixar 3D animation style, cute cartoon character, smooth rounded shapes, warm studio lighting, toy story aesthetic, highly detailed 3D render, expressive big eyes',
+    negPrompt: 'anime, flat, 2d, sketch, realistic photo, dark'
+  },
+  {
+    id: 'watercolor',
+    icon: '🎨',
+    bg: 'linear-gradient(135deg,#e8f4f8,#b8d4e8,#f8e8d8)',
+    name: '水彩插畫',
+    desc: '手繪水彩風格 清新柔和質感',
+    prompt: 'watercolor illustration style, soft brush strokes, delicate color bleeding, paper texture, hand-painted aesthetic, pastel tones, artistic',
+    negPrompt: '3d, digital art, sharp edges, dark, realistic'
+  },
+  {
+    id: 'ghibli',
+    icon: '🌿',
+    bg: 'linear-gradient(135deg,#2d5a27,#5a8a3e,#c8e6c9)',
+    name: '吉卜力',
+    desc: '宮崎駿風格 溫暖自然奇幻感',
+    prompt: 'Studio Ghibli style, Miyazaki Hayao aesthetic, lush nature, warm atmosphere, hand-drawn animation, magical realism, soft colors, detailed backgrounds',
+    negPrompt: 'cyberpunk, dark, horror, realistic, 3d render'
+  },
+  {
+    id: 'ukiyo',
+    icon: '🗻',
+    bg: 'linear-gradient(135deg,#8b0000,#cc0000,#ffe4e1)',
+    name: '浮世繪',
+    desc: '日本傳統版畫 江戶時代美學',
+    prompt: 'Japanese ukiyo-e woodblock print style, flat bold colors, black outlines, traditional Japanese aesthetic, Hokusai inspired, decorative patterns',
+    negPrompt: 'western, 3d, realistic, modern, photo'
+  },
+];
+var selectedSDStyle = SD_STYLES[0];
+
+// ─── Character Themes ────────────────────────────────────────────────────────
+const CHAR_THEMES = [
+  { icon:'🐱', name:'貓咪', desc:'可愛萌貓', val:'可愛的Q版貓咪，大眼睛，圓滾滾身材' },
+  { icon:'🐶', name:'柴犬', desc:'日系犬種', val:'可愛的柴犬，橘色毛，憨厚表情' },
+  { icon:'🐻', name:'熊熊', desc:'圓滾滾熊', val:'Q版小熊，圓耳朵，胖嘟嘟身材' },
+  { icon:'🐸', name:'青蛙', desc:'綠色小蛙', val:'可愛的青蛙角色，大圓眼，綠色皮膚' },
+  { icon:'🐰', name:'兔兔', desc:'長耳朵兔', val:'可愛的兔子，長耳朵，粉紅鼻子' },
+  { icon:'🐼', name:'熊貓', desc:'黑白熊貓', val:'Q版熊貓，黑白配色，胖嘟嘟' },
+  { icon:'🦊', name:'狐狸', desc:'橘色狐狸', val:'可愛的狐狸，橘色毛，三角耳朵' },
+  { icon:'🐹', name:'倉鼠', desc:'圓臉鼠', val:'可愛的倉鼠，圓臉，大腮幫子' },
+  { icon:'🦆', name:'小鴨', desc:'黃色鴨鴨', val:'可愛的黃色小鴨，扁嘴，圓圓的' },
+  { icon:'🐧', name:'企鵝', desc:'黑白企鵝', val:'Q版企鵝，黑白配色，短短翅膀' },
+  { icon:'🌸', name:'少女', desc:'元氣女孩', val:'可愛的Q版卡通少女角色，大眼睛，活潑元氣' },
+  { icon:'🧸', name:'玩偶熊', desc:'填充玩具', val:'可愛的布偶熊角色，縫線紋路，玩具質感' },
+  { icon:'🍄', name:'蘑菇精', desc:'蘑菇造型', val:'可愛的蘑菇精靈角色，頭上有大蘑菇帽' },
+  { icon:'👻', name:'小幽靈', desc:'可愛鬼鬼', val:'可愛的迷你幽靈，圓形身體，表情豐富' },
+  { icon:'🦋', name:'蝴蝶精', desc:'翅膀仙子', val:'可愛的蝴蝶精靈，彩色翅膀，花仙子風格' },
+];
+var selectedCharIdx = -1;
+
+function initCharThemes() {
+  var grid = document.getElementById('charThemeGrid');
+  if (!grid) return;
+  CHAR_THEMES.forEach(function(c, i) {
+    var card = document.createElement('div');
+    card.className = 'char-card';
+    card.id = 'char-' + i;
+    card.innerHTML =
+      '<span class="cc-icon">' + c.icon + '</span>' +
+      '<span class="cc-name">' + c.name + '</span>' +
+      '<span class="cc-desc">' + c.desc + '</span>';
+    card.onclick = (function(idx){ return function(){ selectChar(idx); }; })(i);
+    grid.appendChild(card);
+  });
+}
+
+function selectChar(idx) {
+  var prevEl = document.getElementById('char-' + selectedCharIdx);
+  if (prevEl) prevEl.classList.remove('selected');
+  if (selectedCharIdx === idx) {
+    selectedCharIdx = -1;
+    document.getElementById('aiChar').value = '';
+    document.getElementById('charClearBtn').style.display = 'none';
+    return;
+  }
+  selectedCharIdx = idx;
+  var el = document.getElementById('char-' + idx);
+  if (el) el.classList.add('selected');
+  document.getElementById('aiChar').value = CHAR_THEMES[idx].val;
+  document.getElementById('charClearBtn').style.display = 'inline';
+}
+
+function clearCharSel() {
+  var el = document.getElementById('char-' + selectedCharIdx);
+  if (el) el.classList.remove('selected');
+  selectedCharIdx = -1;
+  document.getElementById('aiChar').value = '';
+  document.getElementById('charClearBtn').style.display = 'none';
+}
+
+function onCharInput() {
+  var val = document.getElementById('aiChar').value;
+  document.getElementById('charClearBtn').style.display = val ? 'inline' : 'none';
+  if (!val && selectedCharIdx >= 0) {
+    var el = document.getElementById('char-' + selectedCharIdx);
+    if (el) el.classList.remove('selected');
+    selectedCharIdx = -1;
+  }
+}
+
+// ─── Preset Phrases ───────────────────────────────────────────────────────────
+var activePhraseCategory = '';
+
+function initPhrases() {
+  var keys = Object.keys(PHRASES);
+  activePhraseCategory = keys[0];
+  var catsEl = document.getElementById('phraseCats');
+  if (!catsEl) return;
+  keys.forEach(function(cat, i) {
+    var btn = document.createElement('button');
+    btn.className = 'phrase-cat-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = cat;
+    btn.onclick = (function(c, b){ return function() {
+      document.querySelectorAll('.phrase-cat-btn').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      activePhraseCategory = c;
+      renderPhrases();
+    }; })(cat, btn);
+    catsEl.appendChild(btn);
+  });
+  renderPhrases();
+}
+
+function renderPhrases() {
+  var gridEl = document.getElementById('phraseGrid');
+  if (!gridEl) return;
+  gridEl.innerHTML = '';
+  var list = PHRASES[activePhraseCategory] || [];
+  list.forEach(function(p) {
+    var chip = document.createElement('div');
+    chip.className = 'phrase-chip';
+    chip.innerHTML = '<span class="pe">' + p.e + '</span><div><span class="pm">' + p.m + '</span><span class="pt">' + p.t + '</span></div>';
+    chip.onclick = (function(ph){ return function() {
+      document.getElementById('aiChar').value = ph.m;
+      document.getElementById('aiEmotion').value = ph.t;
+      showToast('已填入：' + ph.e + ' ' + ph.m, 'success');
+    }; })(p);
+    gridEl.appendChild(chip);
+  });
+}
+
+// ─── Style Chips ──────────────────────────────────────────────────────────────
+const STYLES = [
+  { emoji:'🎨', label:'Q版卡通', val:'cute chibi cartoon style' },
+  { emoji:'✏️', label:'線條插畫', val:'line art illustration style' },
+  { emoji:'🌸', label:'日系可愛', val:'Japanese kawaii style' },
+  { emoji:'🎭', label:'表情誇張', val:'exaggerated expression style' },
+  { emoji:'🖍️', label:'蠟筆風',  val:'crayon hand-drawn style' },
+  { emoji:'💎', label:'3D 立體', val:'3D rendered glossy style' },
+  { emoji:'🌈', label:'扁平插畫', val:'flat design illustration' },
+  { emoji:'🐾', label:'動物擬人', val:'anthropomorphic animal style' },
+];
+var selectedStyle = STYLES[0].val;
+
+function initStyles() {
+  var grid = document.getElementById('styleGrid');
+  if (!grid) return;
+  STYLES.forEach(function(s, i) {
+    var el = document.createElement('div');
+    el.className = 'style-chip' + (i === 0 ? ' selected' : '');
+    el.innerHTML = '<span class="emoji">' + s.emoji + '</span>' + s.label;
+    el.onclick = (function(style, elem){ return function() {
+      document.querySelectorAll('.style-chip').forEach(function(c){ c.classList.remove('selected'); });
+      elem.classList.add('selected');
+      selectedStyle = style.val;
+    }; })(s, el);
+    grid.appendChild(el);
+  });
+}
+
+function initSDStyles() {
+  var grid = document.getElementById('sdStyleGrid');
+  if (!grid) return;
+  SD_STYLES.forEach(function(st) {
+    var card = document.createElement('div');
+    card.className = 'sd-style-card' + (st.id === selectedSDStyle.id ? ' selected' : '');
+    card.id = 'sdc-' + st.id;
+    card.innerHTML =
+      '<div class="sdc-preview" style="background:' + st.bg + '"><span style="font-size:34px">' + st.icon + '</span></div>' +
+      '<div class="sdc-info"><div class="sdc-name">' + st.name + '</div><div class="sdc-desc">' + st.desc + '</div></div>';
+    card.onclick = (function(style){ return function() {
+      selectedSDStyle = style;
+      document.querySelectorAll('.sd-style-card').forEach(function(c){ c.classList.remove('selected'); });
+      card.classList.add('selected');
+    }; })(st);
+    grid.appendChild(card);
+  });
+}
+
+function switchStyleMode(mode) {
+  currentStyleMode = mode;
+  var cBtn = document.getElementById('modeClaudeBtn');
+  var sBtn = document.getElementById('modeSDBtn');
+  var cPanel = document.getElementById('claudeStylePanel');
+  var sPanel = document.getElementById('sdStylePanel');
+  var genBtn = document.getElementById('genBtn');
+  if (mode === 'claude') {
+    if (cBtn) { cBtn.classList.add('active'); sBtn.classList.remove('active'); }
+    if (cPanel) cPanel.style.display = '';
+    if (sPanel) sPanel.style.display = 'none';
+    if (genBtn) genBtn.textContent = '✨ AI 生成貼圖';
+  } else {
+    if (sBtn) { sBtn.classList.add('active'); cBtn.classList.remove('active'); }
+    if (cPanel) cPanel.style.display = 'none';
+    if (sPanel) sPanel.style.display = '';
+    if (genBtn) genBtn.textContent = '🖼 Stability AI 生成';
+  }
+}
+
+
+function loadSDPhoto(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    sdPhotoDataUrl = ev.target.result;
+    var prev = document.getElementById('sdPhotoPreview');
+    if (prev) { prev.src = sdPhotoDataUrl; prev.style.display = 'block'; }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function generateWithSD(idx, count) {
+  var char = document.getElementById('aiChar').value.trim() || 'cute character';
+  var emotion = document.getElementById('aiEmotion').value.trim() || 'happy';
+  var fullPrompt = char + ', ' + emotion + ', ' + selectedSDStyle.prompt
+    + ', LINE sticker style, white background, isolated character, no text';
+
+  var slot = document.getElementById('aislot-' + idx);
+  if (slot) slot.innerHTML =
+    '<div class="slot-generating"><div class="spinner"></div>'
+    + '<span style="font-size:10px;color:var(--text2)">' + selectedSDStyle.name + '…</span></div>';
+
+  try {
+    var endpoint, body;
+
+    if (sdPhotoDataUrl) {
+      // img2img via /sd/i2i
+      var base64 = sdPhotoDataUrl.split(',')[1];
+      endpoint = SD_I2I_URL;
+      body = JSON.stringify({
+        init_image:      base64,
+        init_image_mode: 'IMAGE_STRENGTH',
+        image_strength:  0.38,
+        text_prompts: [
+          { text: fullPrompt,              weight: 1  },
+          { text: selectedSDStyle.negPrompt, weight: -1 }
+        ],
+        cfg_scale: 7,
+        samples:   1,
+        steps:     30
+      });
+    } else {
+      // text-to-image via /sd/t2i
+      endpoint = SD_T2I_URL;
+      body = JSON.stringify({
+        text_prompts: [
+          { text: fullPrompt,              weight: 1  },
+          { text: selectedSDStyle.negPrompt, weight: -1 }
+        ],
+        cfg_scale: 7,
+        width:     512,
+        height:    512,
+        samples:   1,
+        steps:     30
+      });
+    }
+
+    var resp = await fetch(endpoint, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    body
+    });
+
+    if (!resp.ok) {
+      var errData = await resp.json();
+      throw new Error(errData.message || errData.error || ('HTTP ' + resp.status));
+    }
+
+    var data = await resp.json();
+    var imgBase64 = (data.artifacts && data.artifacts[0]) ? data.artifacts[0].base64 : null;
+    if (!imgBase64) throw new Error('未收到圖片資料');
+
+    var dataUrl = 'data:image/png;base64,' + imgBase64;
+    var conformedUrl = await conformToLineSpec(dataUrl, 370, 320, 10);
+
+    if (slot) {
+      var safeUrl  = encodeURIComponent(conformedUrl);
+      var safeName = encodeURIComponent(selectedSDStyle.name + '_' + (idx + 1));
+      slot.innerHTML =
+        '<span class="slot-num">' + (idx + 1) + '</span>'
+        + '<img src="' + conformedUrl + '" alt="sticker">'
+        + '<div class="slot-actions">'
+        + '<button class="btn btn-sm btn-primary"'
+        + ' onclick="openModal(\'' + safeUrl + '\',-1,\'' + safeName + '\')">'
+        + '✏️ 加文字加入</button>'
+        + '<button class="btn btn-sm btn-secondary"'
+        + ' onclick="addToKit(\'' + safeUrl + '\',\'' + safeName + '\')">'
+        + '＋ 直接加入</button>'
+        + '</div>';
+    }
+    return conformedUrl;
+
+  } catch(e) {
+    if (slot) slot.innerHTML =
+      '<div style="padding:8px;font-size:11px;color:var(--err);text-align:center;">'
+      + '⚠️ ' + e.message + '</div>';
+    return null;
+  }
+}
+
+async function generateStickersSD() {
+  var count = parseInt(document.getElementById('genCount').value);
+  var btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Stability AI 生成中...';
+  var resultCard = document.getElementById('aiResultCard');
+  var grid = document.getElementById('aiResultGrid');
+  resultCard.style.display = 'block';
+  grid.innerHTML = '';
+  for (var i = 0; i < count; i++) {
+    var slot = document.createElement('div');
+    slot.className = 'sticker-slot';
+    slot.id = 'aislot-' + i;
+    slot.innerHTML = '<div class="slot-generating"><div class="spinner"></div><span style="font-size:10px;color:var(--text2)">準備中…</span></div>';
+    grid.appendChild(slot);
+  }
+  setProgress('genProgress', 0);
+  for (var j = 0; j < count; j++) {
+    await generateWithSD(j, count);
+    setProgress('genProgress', ((j+1) / count) * 100);
+  }
+  btn.disabled = false;
+  btn.textContent = '🖼 Stability AI 生成';
+  showToast('生成完成！', 'success');
+}
+
+// ─── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('tab-' + name).classList.add('active');
+  var idx = ['ai','upload','manage','export'].indexOf(name);
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  if (name === 'manage' || name === 'export') refreshManage();
+}
+
+// ─── Preset Phrase Data ────────────────────────────────────────────────────────
+const PHRASES = {
+  '😊 問候': [
+    { e:'👋', m:'早安', t:'早上好！精神飽滿' },
+    { e:'🌙', m:'晚安', t:'睡個好覺' },
+    { e:'☀️', m:'午安', t:'下午好' },
+    { e:'🥳', m:'生日快樂', t:'慶祝生日' },
+    { e:'🎊', m:'恭喜', t:'值得慶賀' },
+    { e:'🙏', m:'謝謝', t:'感謝之意' },
+    { e:'😅', m:'不好意思', t:'略帶尷尬的道歉' },
+    { e:'🙌', m:'好的！', t:'爽快答應' },
+  ],
+  '😆 情緒': [
+    { e:'😂', m:'笑死我了', t:'爆笑無法停止' },
+    { e:'😭', m:'哭哭', t:'傷心或感動落淚' },
+    { e:'😤', m:'生氣了！', t:'憤怒表情' },
+    { e:'🥺', m:'拜託拜託', t:'懇求撒嬌' },
+    { e:'🤔', m:'想一想', t:'陷入思考' },
+    { e:'😴', m:'好睏', t:'想睡覺了' },
+    { e:'🤩', m:'太棒了', t:'超級興奮' },
+    { e:'😱', m:'嚇到了', t:'極度驚嚇' },
+  ],
+  '🍽 飲食': [
+    { e:'🍜', m:'吃飯了', t:'用餐時刻' },
+    { e:'🧋', m:'喝手搖', t:'台式飲料文化' },
+    { e:'🍱', m:'午餐到了', t:'開飯囉' },
+    { e:'🍣', m:'吃大餐', t:'享受美食' },
+    { e:'😋', m:'好好吃', t:'美食讚嘆' },
+    { e:'🫙', m:'沒食慾', t:'不想吃東西' },
+    { e:'☕', m:'來杯咖啡', t:'咖啡因補充' },
+    { e:'🍰', m:'慶祝甜點', t:'蛋糕甜食' },
+  ],
+  '💼 工作': [
+    { e:'💪', m:'加油！', t:'打氣鼓勵' },
+    { e:'📝', m:'開會中', t:'正在會議' },
+    { e:'🔥', m:'衝衝衝', t:'全力以赴' },
+    { e:'😩', m:'好累喔', t:'身心疲憊' },
+    { e:'✅', m:'完成了', t:'任務達成' },
+    { e:'🚀', m:'出發！', t:'行動開始' },
+    { e:'📊', m:'交報告', t:'提交成果' },
+    { e:'🤯', m:'壓力大', t:'工作超載' },
+  ],
+  '🏠 生活': [
+    { e:'🛒', m:'去買菜', t:'採購日常' },
+    { e:'🏃', m:'去運動', t:'健身跑步' },
+    { e:'🛁', m:'洗澡去', t:'梳洗時間' },
+    { e:'📺', m:'追劇中', t:'沉浸影集' },
+    { e:'🐱', m:'陪貓咪', t:'寵物陪伴' },
+    { e:'🌧️', m:'下雨了', t:'今天下雨' },
+    { e:'🛵', m:'出門囉', t:'準備外出' },
+    { e:'🏠', m:'回家了', t:'平安到家' },
+  ],
+  '❤️ 愛情': [
+    { e:'💕', m:'我愛你', t:'深情告白' },
+    { e:'🥰', m:'超喜歡你', t:'喜歡的心情' },
+    { e:'😘', m:'比個愛心', t:'飛吻撒嬌' },
+    { e:'😳', m:'臉紅心跳', t:'害羞可愛' },
+    { e:'💔', m:'傷心了', t:'心碎失落' },
+    { e:'🤗', m:'給你抱抱', t:'溫暖擁抱' },
+    { e:'📱', m:'想你了', t:'思念對方' },
+    { e:'👫', m:'一起出去', t:'相約約會' },
+  ],
+  '📈 股市': [
+    { e:'🚀', m:'飆漲停', t:'漲停板大噴發' },
+    { e:'🔴', m:'跌停了', t:'跌停慘賠' },
+    { e:'📉', m:'崩了崩了', t:'大盤急速崩跌' },
+    { e:'💹', m:'逢低買進', t:'低點加碼進場' },
+    { e:'💰', m:'獲利了結', t:'賺到錢出場' },
+    { e:'😰', m:'套牢慘了', t:'被套在高點' },
+    { e:'🎯', m:'目標價到', t:'達到預設目標' },
+    { e:'📊', m:'看技術線', t:'研究K線圖' },
+    { e:'🏦', m:'法人買超', t:'外資大買進' },
+    { e:'⚡', m:'急拉急殺', t:'盤中劇烈震盪' },
+    { e:'🐂', m:'多頭排列', t:'牛市強勢格局' },
+    { e:'🐻', m:'空頭格局', t:'熊市慘跌走勢' },
+  ],
+  '🎤 KTV': [
+    { e:'🎤', m:'麥克風給我', t:'搶麥登場' },
+    { e:'🎵', m:'點歌點歌', t:'趕快點歌' },
+    { e:'🎶', m:'合唱來嘛', t:'邀請一起唱' },
+    { e:'🔊', m:'音量開大', t:'聲音太小要放大' },
+    { e:'🍺', m:'乾杯！', t:'唱歌配飲料乾杯' },
+    { e:'⭐', m:'唱得太讚', t:'稱讚唱歌很好聽' },
+    { e:'😬', m:'音跑掉了', t:'音準跑掉了' },
+    { e:'📝', m:'歌單分享', t:'分享今晚歌單' },
+    { e:'🎸', m:'搖滾一首', t:'點一首搖滾歌' },
+    { e:'🕺', m:'跳起來！', t:'邊唱邊跳舞' },
+    { e:'😭', m:'飆高音失敗', t:'高音沒上去' },
+    { e:'🏆', m:'KTV之王', t:'今晚最強歌手' },
+  ],
+  '🎉 聚會': [
+    { e:'🙋', m:'我到了！', t:'通知已抵達' },
+    { e:'⏰', m:'快遲到了', t:'趕快出發' },
+    { e:'📍', m:'在哪裡啊', t:'詢問集合地點' },
+    { e:'🍻', m:'大家乾杯', t:'舉杯共飲' },
+    { e:'📸', m:'拍照留念', t:'一起拍照' },
+    { e:'🎂', m:'壽星壽星', t:'幫壽星慶生' },
+    { e:'🪑', m:'位置留好', t:'幫忙佔位子' },
+    { e:'🛻', m:'誰來開車', t:'詢問誰是司機' },
+    { e:'😵', m:'喝太多了', t:'喝醉了狀態' },
+    { e:'🌙', m:'要散場了', t:'聚會即將結束' },
+    { e:'🔁', m:'下次再辦', t:'期待下一次聚' },
+    { e:'❤️', m:'謝謝大家', t:'感謝所有人' },
+  ],
+  '🙏 追媽祖': [
+    { e:'🏮', m:'媽祖出巡', t:'遶境隊伍出發' },
+    { e:'🎆', m:'炮聲響了', t:'鞭炮聲大作' },
+    { e:'🛐', m:'虔誠祈福', t:'跪拜祈求平安' },
+    { e:'👣', m:'徒步跟隨', t:'徒步跟隨繞境' },
+    { e:'🌟', m:'聖駕到了', t:'神轎抵達現場' },
+    { e:'🙌', m:'媽祖保庇', t:'祈求媽祖庇護' },
+    { e:'🥵', m:'腳好痠痛', t:'走太久腳痠了' },
+    { e:'🌙', m:'通宵跟轎', t:'整夜跟隨隊伍' },
+    { e:'🍱', m:'吃平安餐', t:'領取平安食物' },
+    { e:'📿', m:'擲筊請示', t:'擲筊詢問媽祖' },
+    { e:'🔴', m:'鑽轎底', t:'鑽過神轎求平安' },
+    { e:'🎊', m:'平安到家', t:'遶境圓滿回鑾' },
+  ],
+  '💅 做指甲': [
+    { e:'💅', m:'去做指甲', t:'準備做美甲' },
+    { e:'🎨', m:'換新款式', t:'換一個新花樣' },
+    { e:'✨', m:'閃亮亮', t:'水鑽閃閃發光' },
+    { e:'🌸', m:'選花樣中', t:'正在挑選圖案' },
+    { e:'❤️', m:'好喜歡這款', t:'超愛這個顏色款式' },
+    { e:'🫰', m:'手好漂亮', t:'美甲完成好看' },
+    { e:'📸', m:'拍手打卡', t:'拍照分享美甲' },
+    { e:'🟥', m:'大紅色', t:'選了熱情大紅' },
+    { e:'🩷', m:'粉嫩色系', t:'選了甜美粉色' },
+    { e:'🌈', m:'繽紛漸層', t:'做漸層彩虹甲' },
+    { e:'💎', m:'水晶甲', t:'做水晶延甲' },
+    { e:'😩', m:'等好久喔', t:'等候時間太長' },
+  ],
+  '👶 帶小孩': [
+    { e:'😴', m:'孩子睡了', t:'終於哄睡了' },
+    { e:'😭', m:'哭哭鬧鬧', t:'小孩一直哭' },
+    { e:'🍼', m:'餵奶時間', t:'準備餵奶' },
+    { e:'🧸', m:'陪玩玩具', t:'一起玩玩具' },
+    { e:'🏫', m:'接送上學', t:'接送上下課' },
+    { e:'🍱', m:'準備便當', t:'做小孩便當' },
+    { e:'🛁', m:'幫洗澡', t:'幫孩子洗澡' },
+    { e:'🤒', m:'孩子發燒', t:'小孩生病了' },
+    { e:'📚', m:'陪做功課', t:'陪讀書寫作業' },
+    { e:'🎠', m:'帶去公園', t:'帶小孩去玩' },
+    { e:'😤', m:'累翻了', t:'帶孩子好疲憊' },
+    { e:'🥰', m:'好可愛啊', t:'孩子超級可愛' },
+  ],
+};
+
+// ─── Prompt builder ───────────────────────────────────────────────────────────
+function buildPrompt(extra = '') {
+  const char = document.getElementById('aiChar').value.trim() || '可愛角色';
+  const emotion = document.getElementById('aiEmotion').value.trim() || '開心';
+  const extraDesc = extra || document.getElementById('aiExtra').value.trim();
+  return 'Create a LINE sticker illustration: ' + char + ' with ' + emotion + ' expression. ' + (extraDesc ? extraDesc + '. ' : '') + 'Style: ' + selectedStyle + '. White or transparent background. No text. Simple clean design suitable for messaging sticker. High quality, cute, expressive.';
+}
+
+function previewPrompt() {
+  alert('🔍 生成 Prompt 預覽:\n\n' + buildPrompt());
+}
+
+// ─── AI Generation ────────────────────────────────────────────────────────────
+async function generateStickers() {
+  if (currentStyleMode === 'sd') { await generateStickersSD(); return; }
+  const count = parseInt(document.getElementById('genCount').value);
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 生成中...';
+
+  const resultCard = document.getElementById('aiResultCard');
+  const grid = document.getElementById('aiResultGrid');
+  resultCard.style.display = 'block';
+  grid.innerHTML = '';
+
+  // Placeholders
+  for (let i = 0; i < count; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'sticker-slot';
+    slot.id = 'aislot-' + i;
+    slot.innerHTML = '<div class="slot-generating"><div class="spinner"></div><span style="font-size:11px;color:var(--text2)">生成中…</span></div>';
+    grid.appendChild(slot);
+  }
+
+  const emotions = ['開心', '生氣', '驚訝', '悲傷', '睡覺', '吃飯', '跑步', '思考', '愛心', '加油'];
+  let done = 0;
+  setProgress('genProgress', 0);
+
+  const tasks = Array.from({ length: count }, (_, i) => {
+    const em = emotions[Math.floor(Math.random() * emotions.length)];
+    const userEmotion = document.getElementById('aiEmotion').value.trim();
+    const emotionText = userEmotion || em;
+    const char = document.getElementById('aiChar').value.trim() || '可愛的貓咪';
+    const prompt = buildPrompt();
+    return generateOne(i, prompt, char + '_' + emotionText + '_' + (i+1));
+  });
+
+  await Promise.all(tasks.map(async (task, i) => {
+    await task;
+    done++;
+    setProgress('genProgress', (done / count) * 100);
+  }));
+
+  btn.disabled = false;
+  btn.textContent = '✨ AI 生成貼圖';
+  showToast('生成完成！點擊圖片加入套件 🎉', 'success');
+}
+
+async function generateOne(idx, prompt, name) {
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: 'You are an expert LINE sticker designer. Generate an SVG sticker illustration based on this description:\n\n' + prompt + '\n\nRequirements:\n- SVG format, viewBox=\'0 0 370 320\'\n- Cute, expressive, LINE sticker style\n- White or very light background rectangle\n- Main character centered, taking up 60-80% of space\n- Bold outlines, vibrant colors\n- Simple, clear design\n- No text whatsoever\n- Include emotions through body language and facial expressions\n\nRespond with ONLY the SVG code, starting with <svg and ending with </svg>. No explanation, no markdown.'
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const svgCode = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text.trim() : '';
+
+    const slot = document.getElementById('aislot-' + idx);
+    if (!slot) return;
+
+    if (svgCode.includes('<svg')) {
+      const blob = new Blob([svgCode], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      // Convert SVG to PNG for proper LINE sticker
+      const dataUrl = await svgToDataUrl(svgCode, 370, 320);
+      var _safeUrl = encodeURIComponent(dataUrl);
+      var _safeName = encodeURIComponent(name);
+      slot.innerHTML =
+        '<span class="slot-num">' + (idx + 1) + '</span>' +
+        '<img src="' + dataUrl + '" alt="sticker">' +
+        '<div class="slot-actions">' +
+        '<button class="btn btn-sm btn-primary" onclick="openModal(\'' + _safeUrl + '\',-1,\'' + _safeName + '\')">✏️ 加文字加入</button>' +
+        '<button class="btn btn-sm btn-secondary" onclick="addToKit(\'' + _safeUrl + '\',\'' + _safeName + '\')">＋ 直接加入</button>' +
+        '</div>';
+    } else {
+      throw new Error('Invalid SVG');
+    }
+  } catch (e) {
+    // Fallback: generate a placeholder SVG sticker
+    const slot = document.getElementById('aislot-' + idx);
+    if (!slot) return;
+    const fallbackSvg = generateFallbackSvg(idx);
+    const dataUrl = await svgToDataUrl(fallbackSvg, 370, 320);
+    var _fbUrl = encodeURIComponent(dataUrl);
+    var _fbName = encodeURIComponent('sticker_' + (idx + 1));
+    slot.innerHTML =
+      '<span class="slot-num">' + (idx + 1) + '</span>' +
+      '<img src="' + dataUrl + '" alt="sticker">' +
+      '<div class="slot-actions">' +
+      '<button class="btn btn-sm btn-primary" onclick="openModal(\'' + _fbUrl + '\',-1,\'' + _fbName + '\')">✏️ 加文字加入</button>' +
+      '<button class="btn btn-sm btn-secondary" onclick="addToKit(\'' + _fbUrl + '\',\'' + _fbName + '\')">＋ 直接加入</button>' +
+      '</div>';
+  }
+}
+
+function generateFallbackSvg(idx) {
+  const colors = ['#FF6B9D','#4ECDC4','#FFE66D','#A8E6CF','#FF8B94','#B8E0D2','#F7B2BD','#98D8C8'];
+  const emotions = ['😊','😂','😍','🤔','😴','🥰','😎','🤩'];
+  const c = colors[idx % colors.length];
+  const e = emotions[idx % emotions.length];
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 370 320">' +
+    '<rect width="370" height="320" fill="white"/>' +
+    '<circle cx="185" cy="160" r="120" fill="' + c + '" stroke="#333" stroke-width="4"/>' +
+    '<text x="185" y="195" font-size="90" text-anchor="middle">' + e + '</text>' +
+    '</svg>';
+}
+
+function svgToDataUrl(svgCode, w, h) {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    const blob = new Blob([svgCode], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      // plain colored box fallback
+      ctx.fillStyle = '#eee';
+      ctx.fillRect(0, 0, w, h);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.src = url;
+  });
+}
+
+// ─── Add to kit ───────────────────────────────────────────────────────────────
+function addToKit(encodedUrl, encodedName) {
+  if (stickers.length >= 40) { showToast('套件已達 40 張上限', 'warn'); return; }
+  const dataUrl = decodeURIComponent(encodedUrl);
+  const name = decodeURIComponent(encodedName) || ('sticker_' + (stickers.length + 1));
+  stickers.push({ id: Date.now() + Math.random(), dataUrl, name });
+  refreshManage();
+  updateShareSelect();
+  showToast('✅ 已加入套件（' + stickers.length + '/40）', 'success');
+}
+
+// ─── Upload ───────────────────────────────────────────────────────────────────
+function handleUpload(e) {
+  processFiles(Array.from(e.target.files));
+}
+
+function dragOver(e) { e.preventDefault(); document.getElementById('uploadZone').classList.add('dragover'); }
+function dragLeave(e) { document.getElementById('uploadZone').classList.remove('dragover'); }
+function dropFiles(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('dragover');
+  processFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')));
+}
+
+function processFiles(files) {
+  if (!files.length) return;
+  const grid = document.getElementById('uploadPreviewGrid');
+  document.getElementById('uploadPreviewCard').style.display = 'block';
+
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const dataUrl = await resizeToSticker(e.target.result, 370, 320);
+      const slot = document.createElement('div');
+      slot.className = 'sticker-slot';
+      const safeUrl = encodeURIComponent(dataUrl);
+      const safeName = encodeURIComponent(file.name.replace(/\.[^.]+$/, ''));
+      slot.innerHTML =
+        '<img src="' + dataUrl + '" alt="">' +
+        '<div class="slot-actions">' +
+        '<button class="btn btn-sm btn-primary" onclick="openModal(\'' + safeUrl + '\',-1,\'' + safeName + '\')">✏️ 加文字加入</button>' +
+        '<button class="btn btn-sm btn-secondary" onclick="addToKit(\'' + safeUrl + '\',\'' + safeName + '\')">＋ 直接加入</button>' +
+        '</div>';
+      grid.appendChild(slot);
+    };
+    reader.readAsDataURL(file);
+  });
+  showToast('已載入 ' + files.length + ' 張圖片', 'success');
+}
+
+function resizeToSticker(src, w, h) {
+  // Use conformToLineSpec with 10px padding for LINE compliance
+  return conformToLineSpec(src, w, h, 10);
+}
+
+// ─── Manage — Pack-tab system ────────────────────────────────────────────────
+var PACK_SIZES = [8, 16, 24, 32, 40];
+var activePackIdx = 0;
+
+function getPackStart() { return activePackIdx === 0 ? 0 : PACK_SIZES[activePackIdx - 1]; }
+function getPackEnd()   { return PACK_SIZES[activePackIdx]; }
+function getPackSize()  { return PACK_SIZES[activePackIdx] - (activePackIdx === 0 ? 0 : PACK_SIZES[activePackIdx - 1]); }
+
+function refreshPackTabs() {
+  var row = document.getElementById('packTabRow');
+  if (!row) return;
+  row.innerHTML = '';
+  PACK_SIZES.forEach(function(sz, i) {
+    var start2 = i === 0 ? 0 : PACK_SIZES[i - 1];
+    var count = Math.max(0, Math.min(stickers.length, sz) - start2);
+    var total = sz - start2;
+    var pct = total > 0 ? Math.round(count / total * 100) : 0;
+    var tab = document.createElement('div');
+    tab.className = 'pack-tab' + (i === activePackIdx ? ' active' : '');
+    tab.onclick = (function(idx){ return function() { activePackIdx = idx; refreshManage(); }; })(i);
+    var lbl = (i === 0 ? '' : PACK_SIZES[i-1] + '+') + sz + ' 張';
+    tab.innerHTML =
+      '<div class="pt-label">' + lbl + '</div>' +
+      '<div class="pt-sub">' + count + '/' + total + '</div>' +
+      '<div class="pt-mini-bar"><div class="pt-mini-fill" style="width:' + pct + '%"></div></div>' +
+      (count > 0 ? '<div class="pt-badge">' + count + '</div>' : '');
+    row.appendChild(tab);
+  });
+}
+
+function addPackSet() {
+  for (var i = 0; i < PACK_SIZES.length; i++) {
+    var s2 = i === 0 ? 0 : PACK_SIZES[i-1];
+    var count = Math.min(stickers.length, PACK_SIZES[i]) - s2;
+    var total = PACK_SIZES[i] - s2;
+    if (count < total) { activePackIdx = i; refreshManage(); return; }
+  }
+  showToast('已達 40 張上限', 'warn');
+}
+
+function refreshManage() {
+  refreshPackTabs();
+  var packStart = getPackStart();
+  var packEnd   = getPackEnd();
+  var packTotal = getPackSize();
+  var filled    = Math.max(0, Math.min(stickers.length, packEnd) - packStart);
+  var pct = packTotal > 0 ? Math.round(filled / packTotal * 100) : 0;
+  var names = ['基本套件 (8)', '標準套件 (16)', '進階套件 (24)', '豪華套件 (32)', '完整套件 (40)'];
+  var titleEl = document.getElementById('manageCardTitle');
+  var subEl   = document.getElementById('manageCardSub');
+  if (titleEl) titleEl.textContent = names[activePackIdx];
+  if (subEl)   subEl.textContent   = filled + ' / ' + packTotal + ' 張已填入';
+  var ring    = document.getElementById('ringProgress');
+  var ringTxt = document.getElementById('ringText');
+  if (ring)    ring.style.strokeDashoffset = String(113 - (113 * pct / 100));
+  if (ringTxt) ringTxt.textContent = pct + '%';
+  var grid = document.getElementById('mainGrid');
+  grid.innerHTML = '';
+  for (var i = 0; i < packTotal; i++) {
+    var absIdx = packStart + i;
+    var s = stickers[absIdx];
+    var slot = document.createElement('div');
+    slot.className = 'sticker-slot' + (s ? '' : ' empty');
+    if (s) {
+      var mu = encodeURIComponent(s.dataUrl);
+      var mn = encodeURIComponent(s.name || ('sticker_' + (absIdx + 1)));
+      slot.innerHTML =
+        '<span class="slot-num">' + (absIdx + 1) + '</span>' +
+        '<img src="' + s.dataUrl + '" alt="">' +
+        '<div class="slot-actions">' +
+        '<button class="btn btn-sm btn-secondary" onclick="openModal(\'' + mu + '\',' + absIdx + ',\'' + mn + '\')">✏️</button>' +
+        '<button class="btn btn-sm btn-danger" onclick="removeSticker(' + absIdx + ')">✕</button>' +
+        '</div>';
+    } else {
+      slot.innerHTML = '<span style="font-size:22px;color:var(--border);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</span>';
+      slot.onclick = function(){ switchTab('ai'); };
+    }
+    grid.appendChild(slot);
+  }
+  var n = stickers.length;
+  var sc = document.getElementById('statCount'); if (sc) sc.textContent = n;
+  var st = document.getElementById('statTarget'); if (st) st.textContent = selectedPackN;
+  var sp = document.getElementById('statPct'); if (sp) sp.textContent = Math.round(n / selectedPackN * 100) + '%';
+  var sb = document.getElementById('statBar'); if (sb) sb.style.width = Math.min(100, Math.round(n / selectedPackN * 100)) + '%';
+  var ec = document.getElementById('exportCount'); if (ec) ec.textContent = n;
+}
+
+function removeSticker(idx) {
+  stickers.splice(idx, 1);
+  refreshManage();
+  showToast('已移除', 'warn');
+}
+
+function clearAll() {
+  if (!stickers.length) return;
+  if (!confirm('確定要清除全部貼圖？')) return;
+  stickers.length = 0;
+  refreshManage();
+  showToast('已清除全部', 'warn');
+}
+
+// ─── Export ───────────────────────────────────────────────────────────────────
+function selectPack(el) {
+  document.querySelectorAll('.pack-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedPackN = parseInt(el.dataset.n);
+  refreshManage();
+}
+
+function previewPack() {
+  const grid = document.getElementById('packPreviewGrid');
+  document.getElementById('packPreviewCard').style.display = 'block';
+  grid.innerHTML = '';
+  stickers.slice(0, selectedPackN).forEach((s, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'sticker-slot';
+    slot.innerHTML = '<span class="slot-num">' + (i+1) + '</span><img src="' + s.dataUrl + '" alt="">';
+    grid.appendChild(slot);
+  });
+}
+
+// ─── LINE Spec compliance: resize to exact px with 10px padding ──────────────
+// LINE official: main sticker 370x320, transparent bg, ≤500KB
+function conformToLineSpec(src, w, h, padding) {
+  padding = padding || 10;
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      // Transparent background (LINE requires PNG with transparency)
+      ctx.clearRect(0, 0, w, h);
+      // Scale to fit within padded area
+      var drawW = w - padding * 2;
+      var drawH = h - padding * 2;
+      var scale = Math.min(drawW / img.width, drawH / img.height);
+      var sw = img.width * scale;
+      var sh = img.height * scale;
+      var ox = (w - sw) / 2;
+      var oy = (h - sh) / 2;
+      ctx.drawImage(img, ox, oy, sw, sh);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = function() { resolve(src); };
+    img.src = src;
+  });
+}
+
+// Check estimated file size
+function estimateKB(dataUrl) {
+  var base64 = dataUrl.split(',')[1] || '';
+  return Math.round(base64.length * 0.75 / 1024);
+}
+
+async function exportZip() {
+  if (stickers.length < 8) {
+    showToast('至少需要 8 張貼圖才能匯出', 'warn'); return;
+  }
+
+  var n = Math.min(stickers.length, selectedPackN);
+  var packName = document.getElementById('packName').value.trim() || 'my-sticker-pack';
+  var zip = new JSZip();
+  var folder = zip.folder(packName);
+  var oversizeCount = 0;
+
+  setProgress('exportProgress', 0);
+  document.getElementById('exportStatus').textContent = '規格驗證中…';
+
+  // Main stickers — conform to 370x320 with 10px padding
+  for (var i = 0; i < n; i++) {
+    var s = stickers[i];
+    var conformedUrl = await conformToLineSpec(s.dataUrl, 370, 320, 10);
+    var kb = estimateKB(conformedUrl);
+    if (kb > 500) oversizeCount++;
+    var base64 = conformedUrl.split(',')[1];
+    var fname = 'sticker_' + String(i + 1).padStart(2, '0') + '.png';
+    folder.file(fname, base64, { base64: true });
+    setProgress('exportProgress', Math.round((i + 1) / (n + 3) * 75));
+    document.getElementById('exportStatus').textContent =
+      '處理第 ' + (i + 1) + '/' + n + ' 張… (' + kb + 'KB)';
+    await sleep(30);
+  }
+
+  // main_image: 240x240 with 10px padding
+  document.getElementById('exportStatus').textContent = '生成 main_image…';
+  var mainImg = await conformToLineSpec(stickers[0].dataUrl, 240, 240, 6);
+  folder.file('main_image.png', mainImg.split(',')[1], { base64: true });
+  setProgress('exportProgress', 88);
+
+  // tab_image: 96x74 with 4px padding
+  document.getElementById('exportStatus').textContent = '生成 tab_image…';
+  var tabImg = await conformToLineSpec(stickers[0].dataUrl, 96, 74, 4);
+  folder.file('tab_image.png', tabImg.split(',')[1], { base64: true });
+  setProgress('exportProgress', 93);
+
+  // README_zh.txt
+  var now = new Date().toLocaleString('zh-TW');
+  var readmeParts = [
+    'LINE 貼圖套件：' + packName,
+    '生成工具：LINE 貼圖工作室',
+    '生成時間：' + now,
+    '',
+    '== 檔案說明 ==',
+    '- sticker_01~' + String(n).padStart(2,'0') + '.png   主貼圖（370×320px，透明背景，10px留白）',
+    '- main_image.png          主圖（240×240px）',
+    '- tab_image.png           標籤圖（96×74px）',
+    '',
+    '== LINE 官方規格 ==',
+    '- 主貼圖：370×320px，PNG，≤500KB，透明背景',
+    '- 主圖：240×240px，PNG，≤1MB',
+    '- 標籤：96×74px，PNG，≤1MB',
+    '- 套件數量：8 / 16 / 24 / 32 / 40 張',
+    '',
+    '== 上架步驟 ==',
+    '1. 前往 https://creator.line.me/',
+    '2. 登入 LINE 帳號',
+    '3. 點選「貼圖」→「新增貼圖」',
+    '4. 上傳各張 sticker PNG，及 main_image、tab_image',
+    '5. 填寫名稱與描述，送出審核',
+    '',
+    '審核通過後可免費或付費上架。審核時間約 1-2 週。',
+  ];
+  folder.file('README_zh.txt', readmeParts.join('\n'));
+
+  setProgress('exportProgress', 97);
+  document.getElementById('exportStatus').textContent = '打包中…';
+
+  var blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+  setProgress('exportProgress', 100);
+
+  var warnMsg = oversizeCount > 0 ? (' ⚠️ ' + oversizeCount + '張超過500KB，建議減少文字疊加') : '';
+  document.getElementById('exportStatus').textContent =
+    '完成！共 ' + n + ' 張，全部符合 370×320px 規格' + warnMsg;
+
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = packName + '.zip';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  // Update share sticker select
+  updateShareSelect();
+  showToast('🎉 ZIP 下載完成！已套用 LINE 官方規格', 'success');
+}
+
+function resizeDataUrl(src, w, h) {
+  return conformToLineSpec(src, w, h, 0);
+}
+
+// ─── Share to LINE ────────────────────────────────────────────────────────────
+function updateShareSelect() {
+  var sel = document.getElementById('shareSelectSticker');
+  if (!sel) return;
+  var prev = sel.value;
+  sel.innerHTML = '<option value="">選擇要分享的貼圖…</option>';
+  stickers.forEach(function(s, i) {
+    var opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = '貼圖 ' + String(i + 1).padStart(2, '0') + (s.name ? ' — ' + decodeURIComponent(s.name).slice(0, 12) : '');
+    sel.appendChild(opt);
+  });
+  if (prev !== '' && stickers[parseInt(prev)]) sel.value = prev;
+}
+
+function shareToLine() {
+  var sel = document.getElementById('shareSelectSticker');
+  var idx = parseInt(sel.value);
+  if (isNaN(idx) || !stickers[idx]) {
+    showToast('請先選擇一張貼圖', 'warn'); return;
+  }
+  var dataUrl = stickers[idx].dataUrl;
+  // Show preview
+  document.getElementById('sharePreviewArea').style.display = 'block';
+  document.getElementById('sharePreviewImg').src = dataUrl;
+
+  // LINE share URL (image share requires a public URL; for local we open LINE with a note)
+  // Attempt Web Share API first (iOS Safari supports it)
+  if (navigator.share) {
+    // Convert dataUrl to Blob for sharing
+    fetch(dataUrl).then(function(r){ return r.blob(); }).then(function(blob) {
+      var file = new File([blob], 'sticker.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          title: 'LINE 貼圖預覽',
+          text: '我用 LINE 貼圖工作室設計的貼圖！'
+        }).then(function() {
+          showToast('已開啟分享介面 🎉', 'success');
+        }).catch(function(e) {
+          if (e.name !== 'AbortError') fallbackLineShare(dataUrl);
+        });
+      } else {
+        fallbackLineShare(dataUrl);
+      }
+    }).catch(function() { fallbackLineShare(dataUrl); });
+  } else {
+    fallbackLineShare(dataUrl);
+  }
+}
+
+function fallbackLineShare(dataUrl) {
+  // LINE URL scheme: line://msg/image — requires hosted URL
+  // Fallback: open LINE app with text message
+  var text = encodeURIComponent('我用 LINE 貼圖工作室設計了一套貼圖！\n（圖片請從相簿選取）');
+  var lineUrl = 'https://line.me/R/share?text=' + text;
+  var win = window.open(lineUrl, '_blank');
+  if (!win) showToast('請允許彈出視窗，或手動開啟 LINE', 'warn');
+  showToast('💡 請在 LINE 中選擇聊天室，圖片已顯示在下方可截圖', 'success');
+}
+
+function copyShareImg() {
+  var sel = document.getElementById('shareSelectSticker');
+  var idx = parseInt(sel.value);
+  if (isNaN(idx) || !stickers[idx]) {
+    showToast('請先選擇一張貼圖', 'warn'); return;
+  }
+  var dataUrl = stickers[idx].dataUrl;
+  document.getElementById('sharePreviewArea').style.display = 'block';
+  document.getElementById('sharePreviewImg').src = dataUrl;
+
+  fetch(dataUrl).then(function(r){ return r.blob(); }).then(function(blob) {
+    var item = new ClipboardItem({ 'image/png': blob });
+    navigator.clipboard.write([item]).then(function() {
+      showToast('✅ 圖片已複製到剪貼簿，可直接貼到 LINE！', 'success');
+    }).catch(function() {
+      showToast('⚠️ 複製失敗，請長按下方圖片儲存', 'warn');
+    });
+  });
+}
+
+// ─── Text Overlay Modal ───────────────────────────────────────────────────────
+const OVERLAY_COLORS = ['#ffffff','#000000','#FF3B30','#FF9500','#FFCC00','#34C759','#007AFF','#AF52DE','#FF2D55'];
+const POSITIONS = [
+  {id:'tl',icon:'↖',x:'left',  y:'top'},
+  {id:'tc',icon:'↑',x:'center',y:'top'},
+  {id:'tr',icon:'↗',x:'right', y:'top'},
+  {id:'ml',icon:'←',x:'left',  y:'middle'},
+  {id:'mc',icon:'·',x:'center',y:'middle'},
+  {id:'mr',icon:'→',x:'right', y:'middle'},
+  {id:'bl',icon:'↙',x:'left',  y:'bottom'},
+  {id:'bc',icon:'↓',x:'center',y:'bottom'},
+  {id:'br',icon:'↘',x:'right', y:'bottom'},
+];
+
+let _modalDataUrl = '';
+let _modalStickerIdx = -1;
+let _modalEncodedUrl = '';
+let _modalEncodedName = '';
+let _overlayColor = '#ffffff';
+let _overlayPos = 'bc'; // bottom-center default
+
+function initModalUI() {
+  // Color swatches
+  var cpEl = document.getElementById('colorPicker');
+  if (!cpEl) return;
+  OVERLAY_COLORS.forEach(function(c) {
+    var sw = document.createElement('div');
+    sw.className = 'color-swatch' + (c === _overlayColor ? ' selected' : '');
+    sw.style.background = c;
+    sw.style.border = c === '#ffffff' ? '2px solid #555' : '2px solid transparent';
+    sw.onclick = function() {
+      _overlayColor = c;
+      document.querySelectorAll('.color-swatch').forEach(function(s){ s.classList.remove('selected'); });
+      sw.classList.add('selected');
+      renderOverlay();
+    };
+    cpEl.appendChild(sw);
+  });
+
+  // Position picker
+  var ppEl = document.getElementById('posPicker');
+  POSITIONS.forEach(function(p) {
+    var btn = document.createElement('div');
+    btn.className = 'pos-btn' + (p.id === _overlayPos ? ' selected' : '');
+    btn.id = 'pos-' + p.id;
+    btn.textContent = p.icon;
+    btn.title = p.id;
+    btn.onclick = function() {
+      _overlayPos = p.id;
+      document.querySelectorAll('.pos-btn').forEach(function(b){ b.classList.remove('selected'); });
+      btn.classList.add('selected');
+      renderOverlay();
+    };
+    ppEl.appendChild(btn);
+  });
+
+  // Phrase chips — flatten all categories
+  var rowEl = document.getElementById('modalPhraseRow');
+  if (!rowEl) return;
+  var allPhrases = [];
+  Object.keys(PHRASES).forEach(function(cat) {
+    PHRASES[cat].forEach(function(p) { allPhrases.push(p); });
+  });
+  allPhrases.forEach(function(p) {
+    var chip = document.createElement('div');
+    chip.className = 'modal-phrase-chip';
+    chip.textContent = p.e + ' ' + p.m;
+    chip.onclick = function() {
+      document.getElementById('overlayText').value = p.m;
+      renderOverlay();
+    };
+    rowEl.appendChild(chip);
+  });
+}
+
+function openModal(encodedUrl, idx, encodedName) {
+  _modalEncodedUrl = encodedUrl;
+  _modalEncodedName = encodedName || ('sticker_' + (stickers.length + 1));
+  _modalDataUrl = decodeURIComponent(encodedUrl);
+  _modalStickerIdx = idx;
+
+  // Reset text
+  document.getElementById('overlayText').value = '';
+  document.getElementById('overlaySize').value = 44;
+  document.getElementById('overlaySizeVal').textContent = '44';
+  document.getElementById('overlayStroke').checked = true;
+
+  // Show/hide remove button
+  var rmBtn = document.getElementById('modalRemoveBtn');
+  var noTextBtn = document.getElementById('modalAddNoText');
+  if (idx >= 0) {
+    rmBtn.style.display = '';
+    noTextBtn.style.display = 'none';
+  } else {
+    rmBtn.style.display = 'none';
+    noTextBtn.style.display = '';
+  }
+
+  renderOverlay();
+  document.getElementById('modalBg').classList.add('open');
+}
+
+function renderOverlay() {
+  var canvas = document.getElementById('modalCanvas');
+  var ctx = canvas.getContext('2d');
+  var img = new Image();
+  img.onload = function() {
+    ctx.clearRect(0, 0, 370, 320);
+    ctx.drawImage(img, 0, 0, 370, 320);
+
+    var text = document.getElementById('overlayText').value.trim();
+    if (!text) return;
+
+    var size = parseInt(document.getElementById('overlaySize').value) || 44;
+    var stroke = document.getElementById('overlayStroke').checked;
+    var color = _overlayColor;
+    var pos = POSITIONS.find(function(p){ return p.id === _overlayPos; }) || POSITIONS[7];
+
+    ctx.font = 'bold ' + size + 'px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+    ctx.textBaseline = 'alphabetic';
+
+    // Calc x
+    var margin = 18;
+    var textW = ctx.measureText(text).width;
+    var x;
+    if (pos.x === 'left')   x = margin;
+    else if (pos.x === 'right')  x = 370 - textW - margin;
+    else x = (370 - textW) / 2;
+
+    // Calc y
+    var y;
+    if (pos.y === 'top')    y = size + margin;
+    else if (pos.y === 'middle') y = 160 + size / 2;
+    else y = 320 - margin;
+
+    if (stroke) {
+      ctx.strokeStyle = (color === '#000000') ? '#ffffff' : '#000000';
+      ctx.lineWidth = size * 0.18;
+      ctx.lineJoin = 'round';
+      ctx.strokeText(text, x, y);
+    }
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+  };
+  img.src = _modalDataUrl;
+}
+
+function clearOverlay() {
+  document.getElementById('overlayText').value = '';
+  renderOverlay();
+}
+
+function addFromModal(withText) {
+  var finalUrl;
+  if (withText && document.getElementById('overlayText').value.trim()) {
+    finalUrl = document.getElementById('modalCanvas').toDataURL('image/png');
+  } else {
+    finalUrl = _modalDataUrl;
+  }
+  addToKit(encodeURIComponent(finalUrl), _modalEncodedName);
+  closeModal();
+}
+
+function removeFromModal() {
+  removeSticker(_modalStickerIdx);
+  closeModal();
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modalBg')) return;
+  document.getElementById('modalBg').classList.remove('open');
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function setProgress(id, pct) {
+  document.getElementById(id).style.width = pct + '%';
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+initCharThemes();
+initPhrases();
+initStyles();
+initSDStyles();
+initModalUI();
+refreshManage();
+</script>
+</body>
+</html>
