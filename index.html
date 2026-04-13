@@ -1262,6 +1262,7 @@ let selectedPackN = 8;
 let activeModal = null;
 var currentStyleMode = 'claude'; // 'claude' | 'sd'
 var sdPhotoDataUrl = null;
+var sdPhotoDims = [1024, 1024]; // SDXL-compatible dimensions
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 var API_URL    = 'https://arcar.kftseng2oo1.workers.dev';
@@ -1513,56 +1514,68 @@ function loadSDPhoto(e) {
   var reader = new FileReader();
   reader.onload = function(ev) {
     // Compress image before storing — SD API max 5MB
-    compressForSD(ev.target.result, function(compressed) {
+    compressForSD(ev.target.result, function(compressed, tw, th) {
       sdPhotoDataUrl = compressed;
+      sdPhotoDims = [tw || 1024, th || 1024];
       var prev = document.getElementById('sdPhotoPreview');
       if (prev) { prev.src = compressed; prev.style.display = 'block'; }
-      // Show compressed size
       var kb = Math.round(compressed.length * 0.75 / 1024);
-      showToast('照片已載入，壓縮後約 ' + kb + ' KB', 'success');
+      showToast('照片已載入 ' + (tw||1024) + 'x' + (th||1024) + '，約 ' + kb + ' KB', 'success');
     });
   };
   reader.readAsDataURL(file);
 }
 
+// SDXL 1.0 allowed dimensions for i2i
+var SD_ALLOWED_DIMS = [
+  [1024,1024],[1152,896],[896,1152],[1216,832],[832,1216],
+  [1344,768],[768,1344],[1536,640],[640,1536]
+];
+
+function bestSDDims(w, h) {
+  // Pick the allowed dimension closest in aspect ratio to input
+  var aspect = w / h;
+  var best = SD_ALLOWED_DIMS[0];
+  var bestDiff = Math.abs(best[0]/best[1] - aspect);
+  SD_ALLOWED_DIMS.forEach(function(d) {
+    var diff = Math.abs(d[0]/d[1] - aspect);
+    if (diff < bestDiff) { bestDiff = diff; best = d; }
+  });
+  return best;
+}
+
 function compressForSD(dataUrl, callback) {
   var img = new Image();
   img.onload = function() {
-    // Target: max 1024px on longest side, JPEG quality 0.85
-    var maxSize = 1024;
-    var w = img.width;
-    var h = img.height;
-    if (w > maxSize || h > maxSize) {
-      var scale = Math.min(maxSize / w, maxSize / h);
-      w = Math.round(w * scale);
-      h = Math.round(h * scale);
-    }
+    // Pick best SDXL-compatible dimension
+    var dims = bestSDDims(img.width, img.height);
+    var tw = dims[0];
+    var th = dims[1];
+
     var canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
+    canvas.width = tw;
+    canvas.height = th;
     var ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, w, h);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, tw, th);
 
-    // Try JPEG first (much smaller than PNG for photos)
-    var jpegUrl = canvas.toDataURL('image/jpeg', 0.85);
-    var jpegKB = Math.round(jpegUrl.length * 0.75 / 1024);
+    // Cover crop: fill the target box, centered
+    var scale = Math.max(tw / img.width, th / img.height);
+    var sw = img.width * scale;
+    var sh = img.height * scale;
+    var ox = (tw - sw) / 2;
+    var oy = (th - sh) / 2;
+    ctx.drawImage(img, ox, oy, sw, sh);
 
-    // If still over 4MB, reduce quality further
-    if (jpegKB > 4000) {
-      jpegUrl = canvas.toDataURL('image/jpeg', 0.65);
-      jpegKB = Math.round(jpegUrl.length * 0.75 / 1024);
-    }
-    if (jpegKB > 4000) {
-      // Resize further to 768px
-      var canvas2 = document.createElement('canvas');
-      var scale2 = 768 / Math.max(w, h);
-      canvas2.width = Math.round(w * scale2);
-      canvas2.height = Math.round(h * scale2);
-      var ctx2 = canvas2.getContext('2d');
-      ctx2.drawImage(canvas, 0, 0, canvas2.width, canvas2.height);
-      jpegUrl = canvas2.toDataURL('image/jpeg', 0.75);
-    }
-    callback(jpegUrl);
+    // JPEG quality 0.88 — good quality, smaller size
+    var jpegUrl = canvas.toDataURL('image/jpeg', 0.88);
+    var kb = Math.round(jpegUrl.length * 0.75 / 1024);
+
+    // Reduce quality if over 4MB
+    if (kb > 4000) jpegUrl = canvas.toDataURL('image/jpeg', 0.70);
+    if (kb > 4000) jpegUrl = canvas.toDataURL('image/jpeg', 0.55);
+
+    callback(jpegUrl, tw, th);
   };
   img.src = dataUrl;
 }
@@ -1594,6 +1607,8 @@ async function generateWithSD(idx, count) {
         init_image:      base64,
         init_image_mode: 'IMAGE_STRENGTH',
         image_strength:  0.38,
+        width:           sdPhotoDims[0],
+        height:          sdPhotoDims[1],
         text_prompts: [
           { text: fullPrompt,              weight: 1  },
           { text: selectedSDStyle.negPrompt, weight: -1 }
