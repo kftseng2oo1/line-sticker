@@ -1607,8 +1607,6 @@ async function generateWithSD(idx, count) {
         init_image:      base64,
         init_image_mode: 'IMAGE_STRENGTH',
         image_strength:  0.38,
-        width:           sdPhotoDims[0],
-        height:          sdPhotoDims[1],
         text_prompts: [
           { text: fullPrompt,              weight: 1  },
           { text: selectedSDStyle.negPrompt, weight: -1 }
