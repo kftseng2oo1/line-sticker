@@ -803,6 +803,80 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 }
 .api-key-row .key-icon { font-size: 18px; flex-shrink: 0; }
 
+
+/* Phrase grid layout toggle */
+.phrase-grid.vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.phrase-grid.vertical .phrase-chip {
+  width: 100%;
+  padding: 10px 14px;
+}
+.phrase-layout-btn {
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--dark3);
+  color: var(--text2);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+.phrase-layout-btn.active {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(0,195,0,0.08);
+}
+
+
+/* Upload enhancement toolbar */
+.upload-enhance-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  align-items: center;
+}
+.enhance-label {
+  font-size: 11px;
+  color: var(--text2);
+  font-family: 'Space Mono', monospace;
+  flex-shrink: 0;
+}
+.frame-chip {
+  padding: 6px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  background: var(--dark2);
+  color: var(--text2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.frame-chip:hover { border-color: var(--green); color: var(--text); }
+.frame-chip.selected { border-color: var(--green); background: rgba(0,195,0,0.1); color: var(--green); font-weight: 700; }
+
+/* Rembg status */
+.rembg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+}
+.rembg-badge.on  { background: rgba(0,195,0,0.12); color: var(--green); border: 1px solid rgba(0,195,0,0.3); }
+.rembg-badge.off { background: var(--dark3); color: var(--text2); border: 1px solid var(--border); }
+
 </style>
 </head>
 <body>
@@ -905,7 +979,13 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
           <textarea id="aiExtra" placeholder="例：戴著帽子、背景純色、Q版卡通風格"></textarea>
         </div>
         <div class="ai-form-full">
-          <label class="field-label">💬 常用語快選 <span style="color:var(--text2);font-weight:400;">（點擊自動填入）</span></label>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+            <label class="field-label" style="margin-bottom:0;">💬 常用語快選 <span style="color:var(--text2);font-weight:400;">（點擊自動填入）</span></label>
+            <div style="display:flex;gap:5px;">
+              <button class="phrase-layout-btn active" id="layoutH" onclick="setPhraseLayout('h')" title="橫式">⬛⬛</button>
+              <button class="phrase-layout-btn" id="layoutV" onclick="setPhraseLayout('v')" title="直式">☰</button>
+            </div>
+          </div>
           <div class="phrase-cats" id="phraseCats"></div>
           <div class="phrase-grid" id="phraseGrid"></div>
         </div>
@@ -976,6 +1056,46 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
   <div id="tab-upload" class="tab-panel">
     <div class="card">
       <div class="card-title">上傳你的圖片</div>
+
+      <!-- Enhancement toolbar -->
+      <div class="upload-enhance-bar">
+        <span class="enhance-label">🎨 上傳後自動套用：</span>
+
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:12px;color:var(--text2);">去背：</span>
+          <div id="rembgBadge" class="rembg-badge off" onclick="toggleRembg()" style="cursor:pointer;">
+            ✕ 關閉
+          </div>
+          <input type="password" id="rembgApiKey" placeholder="remove.bg API Key"
+            style="display:none;width:160px;font-size:11px;padding:4px 8px;background:var(--dark3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:Space Mono,monospace;outline:none;">
+        </div>
+
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:12px;color:var(--text2);">縮放：</span>
+          <div class="frame-chip selected" id="scaleCover" onclick="setScaleMode('cover')">填滿</div>
+          <div class="frame-chip"          id="scaleFit"   onclick="setScaleMode('fit')">留邊</div>
+        </div>
+
+        <div id="cropPosRow" style="display:flex;align-items:center;gap:8px;width:100%;">
+          <span style="font-size:12px;color:var(--text2);flex-shrink:0;">裁切位置：</span>
+          <span style="font-size:11px;color:var(--text2);">頂</span>
+          <input type="range" id="cropAnchor" min="0" max="100" value="25"
+            style="flex:1;accent-color:var(--green);"
+            oninput="document.getElementById('cropAnchorVal').textContent=this.value+'%'">
+          <span style="font-size:11px;color:var(--text2);">底</span>
+          <span id="cropAnchorVal" style="font-size:11px;color:var(--accent);font-family:'Space Mono',monospace;min-width:32px;">25%</span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:12px;color:var(--text2);">邊框：</span>
+          <div class="frame-chip selected" data-frame="none"   onclick="selectFrame(this)">無</div>
+          <div class="frame-chip"          data-frame="white"  onclick="selectFrame(this)">白框</div>
+          <div class="frame-chip"          data-frame="shadow" onclick="selectFrame(this)">陰影</div>
+          <div class="frame-chip"          data-frame="stroke" onclick="selectFrame(this)">粗描邊</div>
+          <div class="frame-chip"          data-frame="bubble" onclick="selectFrame(this)">對話框</div>
+        </div>
+      </div>
+
       <div class="info-box">⚠️ 建議圖片為 PNG 透明背景，將自動縮放至 370×320px 符合 LINE 規格</div>
       <div class="upload-zone" id="uploadZone" onclick="document.getElementById('uploadInput').click()"
         ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFiles(event)">
@@ -1231,13 +1351,18 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       </div>
     </div>
 
-    <!-- Stroke toggle -->
-    <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
+    <!-- Stroke toggle + writing mode -->
+    <div style="margin-top:8px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
       <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;">
         <input type="checkbox" id="overlayStroke" checked onchange="renderOverlay()"
           style="accent-color:var(--green);width:15px;height:15px;">
-        白色描邊（讓文字更清晰）
+        白色描邊
       </label>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:12px;color:var(--text2);">排版：</span>
+        <button class="phrase-layout-btn active" id="writingH" onclick="setWritingMode('h')">橫 ABC</button>
+        <button class="phrase-layout-btn" id="writingV" onclick="setWritingMode('v')">直 竖</button>
+      </div>
     </div>
 
     <!-- Actions -->
@@ -1400,6 +1525,25 @@ function onCharInput() {
 
 // ─── Preset Phrases ───────────────────────────────────────────────────────────
 var activePhraseCategory = '';
+
+var phraseLayout = 'h'; // 'h' = horizontal grid, 'v' = vertical list
+
+function setPhraseLayout(mode) {
+  phraseLayout = mode;
+  var grid = document.getElementById('phraseGrid');
+  var btnH = document.getElementById('layoutH');
+  var btnV = document.getElementById('layoutV');
+  if (!grid) return;
+  if (mode === 'v') {
+    grid.classList.add('vertical');
+    if (btnH) btnH.classList.remove('active');
+    if (btnV) btnV.classList.add('active');
+  } else {
+    grid.classList.remove('vertical');
+    if (btnH) btnH.classList.add('active');
+    if (btnV) btnV.classList.remove('active');
+  }
+}
 
 function initPhrases() {
   var keys = Object.keys(PHRASES);
@@ -1655,7 +1799,7 @@ async function generateWithSD(idx, count) {
     if (!imgBase64) throw new Error('API 未回傳圖片 — 請確認 Worker STABILITY_API_KEY 已設定');
 
     var dataUrl = 'data:image/png;base64,' + imgBase64;
-    var conformedUrl = await conformToLineSpec(dataUrl, 370, 320, 10);
+    var conformedUrl = await conformToLineSpec(dataUrl, 370, 320, 4);
 
     if (slot) {
       var safeUrl  = encodeURIComponent(conformedUrl);
@@ -1934,7 +2078,7 @@ async function generateOne(idx, prompt, name) {
         max_tokens: 4096,
         messages: [{
           role: 'user',
-          content: 'You are an expert LINE sticker designer. Generate an SVG sticker illustration based on this description:\n\n' + prompt + '\n\nRequirements:\n- SVG format, viewBox=\'0 0 370 320\'\n- Cute, expressive, LINE sticker style\n- White or very light background rectangle\n- Main character centered, taking up 60-80% of space\n- Bold outlines, vibrant colors\n- Simple, clear design\n- No text whatsoever\n- Include emotions through body language and facial expressions\n\nRespond with ONLY the SVG code, starting with <svg and ending with </svg>. No explanation, no markdown.'
+          content: 'You are an expert LINE sticker designer. Generate an SVG sticker illustration based on this description:\n\n' + prompt + '\n\nRequirements:\n- SVG format, viewBox=\'0 0 370 320\', character should fill most of this area\n- Cute, expressive, LINE sticker style\n- White or very light background rectangle\n- Main character centered, taking up 85-95% of the canvas space, filling the frame generously\n- Bold outlines, vibrant colors\n- Simple, clear design\n- No text whatsoever\n- Include emotions through body language and facial expressions\n\nRespond with ONLY the SVG code, starting with <svg and ending with </svg>. No explanation, no markdown.'
         }]
       })
     });
@@ -2060,35 +2204,280 @@ function dropFiles(e) {
   processFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')));
 }
 
+// ─── Upload enhancement state ─────────────────────────────────────────────────
+var uploadRembgEnabled = false;
+var uploadScaleMode = 'cover'; // 'cover' = fill & crop center, 'fit' = letterbox
+
+function setScaleMode(mode) {
+  uploadScaleMode = mode;
+  var btnC = document.getElementById('scaleCover');
+  var btnF = document.getElementById('scaleFit');
+  var cropRow = document.getElementById('cropPosRow');
+  if (btnC) btnC.className = 'frame-chip' + (mode === 'cover' ? ' selected' : '');
+  if (btnF) btnF.className = 'frame-chip' + (mode === 'fit'   ? ' selected' : '');
+  if (cropRow) cropRow.style.display = (mode === 'cover') ? 'flex' : 'none';
+}
+var uploadFrameStyle   = 'none'; // none | white | shadow | stroke | bubble
+
+function toggleRembg() {
+  uploadRembgEnabled = !uploadRembgEnabled;
+  var badge  = document.getElementById('rembgBadge');
+  var keyInp = document.getElementById('rembgApiKey');
+  if (uploadRembgEnabled) {
+    badge.className = 'rembg-badge on';
+    badge.textContent = '✓ 開啟';
+    if (keyInp) keyInp.style.display = 'inline-block';
+  } else {
+    badge.className = 'rembg-badge off';
+    badge.textContent = '✕ 關閉';
+    if (keyInp) keyInp.style.display = 'none';
+  }
+}
+
+function selectFrame(el) {
+  document.querySelectorAll('.frame-chip').forEach(function(c){ c.classList.remove('selected'); });
+  el.classList.add('selected');
+  uploadFrameStyle = el.dataset.frame;
+}
+
+// Remove background via remove.bg API
+async function removeBackground(dataUrl) {
+  var apiKey = document.getElementById('rembgApiKey') ? document.getElementById('rembgApiKey').value.trim() : '';
+  if (!apiKey) { showToast('請輸入 remove.bg API Key', 'warn'); return dataUrl; }
+
+  try {
+    // Convert dataUrl to blob
+    var res  = await fetch(dataUrl);
+    var blob = await res.blob();
+    var form = new FormData();
+    form.append('image_file', blob, 'image.png');
+    form.append('size', 'auto');
+
+    var resp = await fetch('https://api.remove.bg/v1.0/removebg', {
+      method: 'POST',
+      headers: { 'X-Api-Key': apiKey },
+      body: form
+    });
+    if (!resp.ok) { showToast('去背失敗: HTTP ' + resp.status, 'warn'); return dataUrl; }
+    var resultBlob = await resp.blob();
+    return new Promise(function(resolve) {
+      var reader = new FileReader();
+      reader.onload = function(e) { resolve(e.target.result); };
+      reader.readAsDataURL(resultBlob);
+    });
+  } catch(e) {
+    showToast('去背失敗: ' + e.message, 'warn');
+    return dataUrl;
+  }
+}
+
+// Apply sticker frame decoration
+function applyFrame(dataUrl, frameStyle) {
+  return new Promise(function(resolve) {
+    if (frameStyle === 'none') { resolve(dataUrl); return; }
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      canvas.width = 370; canvas.height = 320;
+      var ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 370, 320);
+
+      if (frameStyle === 'white') {
+        // Rounded white card background
+        var pad = 14;
+        roundRect(ctx, pad, pad, 370 - pad*2, 320 - pad*2, 24);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        // Subtle border
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // Draw image inside with padding
+        var scale = Math.min((370 - pad*4) / img.width, (320 - pad*4) / img.height);
+        var sw = img.width * scale, sh = img.height * scale;
+        ctx.drawImage(img, (370-sw)/2, (320-sh)/2, sw, sh);
+
+      } else if (frameStyle === 'shadow') {
+        // Drop shadow effect
+        ctx.shadowColor = 'rgba(0,0,0,0.35)';
+        ctx.shadowBlur  = 18;
+        ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 6;
+        var scale2 = Math.min(340 / img.width, 290 / img.height);
+        var sw2 = img.width * scale2, sh2 = img.height * scale2;
+        ctx.drawImage(img, (370-sw2)/2, (320-sh2)/2, sw2, sh2);
+
+      } else if (frameStyle === 'stroke') {
+        // Bold white outline (sticker-style)
+        // Draw image multiple times offset for thick outline
+        var scale3 = Math.min(330 / img.width, 280 / img.height);
+        var sw3 = img.width * scale3, sh3 = img.height * scale3;
+        var ox = (370-sw3)/2, oy = (320-sh3)/2;
+        var offsets = [[-8,0],[8,0],[0,-8],[0,8],[-6,-6],[6,-6],[-6,6],[6,6]];
+        // Draw white outline passes
+        ctx.globalAlpha = 1;
+        offsets.forEach(function(o) {
+          ctx.drawImage(img, ox+o[0], oy+o[1], sw3, sh3);
+        });
+        // Tint to white using destination-out trick
+        ctx.globalCompositeOperation = 'source-atop';
+        ctx.fillStyle = '#ffffff';
+        offsets.forEach(function(o) {
+          ctx.fillRect(ox+o[0]-1, oy+o[1]-1, sw3+2, sh3+2);
+        });
+        ctx.globalCompositeOperation = 'source-over';
+        // Draw original on top
+        ctx.drawImage(img, ox, oy, sw3, sh3);
+
+      } else if (frameStyle === 'bubble') {
+        // Speech bubble background
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#333333';
+        ctx.lineWidth = 3;
+        // Bubble body
+        roundRect(ctx, 10, 10, 350, 265, 28);
+        ctx.fill(); ctx.stroke();
+        // Bubble tail (bottom left)
+        ctx.beginPath();
+        ctx.moveTo(60, 272); ctx.lineTo(30, 310); ctx.lineTo(110, 272);
+        ctx.closePath();
+        ctx.fillStyle = '#ffffff'; ctx.fill();
+        ctx.strokeStyle = '#333333'; ctx.lineWidth = 3; ctx.stroke();
+        // Draw image inside bubble
+        var scale4 = Math.min(320 / img.width, 240 / img.height);
+        var sw4 = img.width * scale4, sh4 = img.height * scale4;
+        ctx.drawImage(img, (370-sw4)/2, 14 + (252-sh4)/2, sw4, sh4);
+      }
+
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.src = dataUrl;
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
 function processFiles(files) {
   if (!files.length) return;
-  const grid = document.getElementById('uploadPreviewGrid');
+  var grid = document.getElementById('uploadPreviewGrid');
   document.getElementById('uploadPreviewCard').style.display = 'block';
 
-  files.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const dataUrl = await resizeToSticker(e.target.result, 370, 320);
-      const slot = document.createElement('div');
-      slot.className = 'sticker-slot';
-      const safeUrl = encodeURIComponent(dataUrl);
-      const safeName = encodeURIComponent(file.name.replace(/\.[^.]+$/, ''));
-      slot.innerHTML =
-        '<img src="' + dataUrl + '" alt="">' +
-        '<div class="slot-actions">' +
-        '<button class="btn btn-sm btn-primary" onclick="openModal(\'' + safeUrl + '\',-1,\'' + safeName + '\')">✏️ 加文字加入</button>' +
-        '<button class="btn btn-sm btn-secondary" onclick="addToKit(\'' + safeUrl + '\',\'' + safeName + '\')">＋ 直接加入</button>' +
-        '</div>';
-      grid.appendChild(slot);
+  files.forEach(function(file) {
+    // Add spinner slot immediately
+    var slot = document.createElement('div');
+    slot.className = 'sticker-slot';
+    slot.innerHTML = '<div class="slot-generating"><div class="spinner"></div><span style="font-size:10px;color:var(--text2)">處理中…</span></div>';
+    grid.appendChild(slot);
+
+    var reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        var dataUrl = e.target.result;
+
+        // Step 1: Remove background if enabled
+        if (uploadRembgEnabled) {
+          slot.querySelector('span').textContent = '去背中…';
+          dataUrl = await removeBackground(dataUrl);
+        }
+
+        // Step 2: Resize to LINE spec
+        slot.querySelector('span').textContent = '縮放中…';
+        dataUrl = await resizeToSticker(dataUrl, 370, 320);
+
+        // Step 3: Apply frame
+        if (uploadFrameStyle !== 'none') {
+          slot.querySelector('span').textContent = '套用邊框…';
+          dataUrl = await applyFrame(dataUrl, uploadFrameStyle);
+        }
+
+        var safeUrl  = encodeURIComponent(dataUrl);
+        var safeName = encodeURIComponent(file.name.replace(/\.[^.]+$/, ''));
+        slot.innerHTML =
+          '<img src="' + dataUrl + '" alt="">' +
+          '<div class="slot-actions">' +
+          '<button class="btn btn-sm btn-primary" onclick="openModal(\'' + safeUrl + '\',-1,\'' + safeName + '\')">✏️ 加文字加入</button>' +
+          '<button class="btn btn-sm btn-secondary" onclick="addToKit(\'' + safeUrl + '\',\'' + safeName + '\')">＋ 直接加入</button>' +
+          '</div>';
+      } catch(err) {
+        slot.innerHTML = '<div style="padding:8px;font-size:11px;color:var(--err);text-align:center;">⚠️ ' + err.message + '</div>';
+      }
     };
     reader.readAsDataURL(file);
   });
-  showToast('已載入 ' + files.length + ' 張圖片', 'success');
+  showToast('已載入 ' + files.length + ' 張，處理中…', 'success');
 }
 
 function resizeToSticker(src, w, h) {
-  // Use conformToLineSpec with 10px padding for LINE compliance
-  return conformToLineSpec(src, w, h, 10);
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+
+      // cover = fill & smart-crop / fit = letterbox with 4px padding
+      var scale = (uploadScaleMode === 'fit')
+        ? Math.min((w-8) / img.width, (h-8) / img.height)
+        : Math.max(w / img.width, h / img.height);
+      var sw = img.width  * scale;
+      var sh = img.height * scale;
+      var ox = (w - sw) / 2;
+      // Smart vertical crop: for portrait photos (taller than wide),
+      // shift anchor to top-25% so faces/heads are preserved
+      var oyCentered = (h - sh) / 2;
+      var oy;
+      if (uploadScaleMode === 'fit') {
+        oy = oyCentered;
+      } else {
+        // Portrait: anchor at 25% from top (face zone)
+        // Landscape: center crop is fine
+        var anchorEl = document.getElementById('cropAnchor');
+        var anchor = anchorEl ? (parseInt(anchorEl.value) / 100) : 0.25;
+        // anchor=0 → top of image, anchor=0.5 → center, anchor=1 → bottom
+        var isPortrait = img.height > img.width;
+        if (isPortrait) {
+          // excess height after scaling: sh - h (positive when portrait fills width)
+          var excess = sh - h;
+          oy = excess > 0 ? -excess * anchor : oyCentered;
+        } else {
+          oy = oyCentered;
+        }
+      }
+      ctx.drawImage(img, ox, oy, sw, sh);
+
+      var pngUrl = canvas.toDataURL('image/png');
+      var kb = Math.round(pngUrl.length * 0.75 / 1024);
+      if (kb <= 500) { resolve(pngUrl); return; }
+      // Over 500KB: use WebP → PNG
+      var webpUrl = canvas.toDataURL('image/webp', 0.85);
+      if (webpUrl.indexOf('image/webp') > -1) {
+        var img2 = new Image();
+        img2.onload = function() {
+          var c2 = document.createElement('canvas');
+          c2.width = w; c2.height = h;
+          c2.getContext('2d').drawImage(img2, 0, 0);
+          resolve(c2.toDataURL('image/png'));
+        };
+        img2.src = webpUrl;
+        return;
+      }
+      resolve(pngUrl);
+    };
+    img.onerror = function() { resolve(src); };
+    img.src = src;
+  });
 }
 
 // ─── Manage — Pack-tab system ────────────────────────────────────────────────
@@ -2215,7 +2604,7 @@ function previewPack() {
 // ─── LINE Spec compliance: resize to exact px with 10px padding ──────────────
 // LINE official: main sticker 370x320, transparent bg, ≤500KB
 function conformToLineSpec(src, w, h, padding) {
-  padding = padding || 10;
+  if (padding === undefined || padding === null) padding = 4;
   return new Promise(function(resolve) {
     var img = new Image();
     img.onload = function() {
@@ -2302,7 +2691,7 @@ async function exportZip() {
   // Main stickers — conform to 370x320 with 10px padding
   for (var i = 0; i < n; i++) {
     var s = stickers[i];
-    var conformedUrl = await conformToLineSpec(s.dataUrl, 370, 320, 10);
+    var conformedUrl = await conformToLineSpec(s.dataUrl, 370, 320, 4);
     var kb = estimateKB(conformedUrl);
     if (kb > 500) oversizeCount++;
     var base64 = conformedUrl.split(',')[1];
@@ -2483,6 +2872,7 @@ let _modalEncodedUrl = '';
 let _modalEncodedName = '';
 let _overlayColor = '#ffffff';
 let _overlayPos = 'bc'; // bottom-center default
+var _writingMode = 'h'; // 'h' = horizontal, 'v' = vertical
 
 function initModalUI() {
   // Color swatches
@@ -2565,6 +2955,15 @@ function openModal(encodedUrl, idx, encodedName) {
   document.getElementById('modalBg').classList.add('open');
 }
 
+function setWritingMode(mode) {
+  _writingMode = mode;
+  var btnH = document.getElementById('writingH');
+  var btnV = document.getElementById('writingV');
+  if (btnH) btnH.className = 'phrase-layout-btn' + (mode === 'h' ? ' active' : '');
+  if (btnV) btnV.className = 'phrase-layout-btn' + (mode === 'v' ? ' active' : '');
+  renderOverlay();
+}
+
 function renderOverlay() {
   var canvas = document.getElementById('modalCanvas');
   var ctx = canvas.getContext('2d');
@@ -2576,40 +2975,75 @@ function renderOverlay() {
     var text = document.getElementById('overlayText').value.trim();
     if (!text) return;
 
-    var size = parseInt(document.getElementById('overlaySize').value) || 44;
+    var size   = parseInt(document.getElementById('overlaySize').value) || 44;
     var stroke = document.getElementById('overlayStroke').checked;
-    var color = _overlayColor;
-    var pos = POSITIONS.find(function(p){ return p.id === _overlayPos; }) || POSITIONS[7];
+    var color  = _overlayColor;
+    var pos    = POSITIONS.find(function(p){ return p.id === _overlayPos; }) || POSITIONS[7];
+    var margin = 18;
 
     ctx.font = 'bold ' + size + 'px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
-    ctx.textBaseline = 'alphabetic';
 
-    // Calc x
-    var margin = 18;
-    var textW = ctx.measureText(text).width;
-    var x;
-    if (pos.x === 'left')   x = margin;
-    else if (pos.x === 'right')  x = 370 - textW - margin;
-    else x = (370 - textW) / 2;
+    if (_writingMode === 'v') {
+      // ── Vertical writing (top-to-bottom, right-to-left stacking) ────────────
+      var chars = text.split('');
+      var lineH = size * 1.25;
+      var totalH = chars.length * lineH;
 
-    // Calc y
-    var y;
-    if (pos.y === 'top')    y = size + margin;
-    else if (pos.y === 'middle') y = 160 + size / 2;
-    else y = 320 - margin;
+      // X position
+      var x;
+      if (pos.x === 'left')        x = margin + size / 2;
+      else if (pos.x === 'right')  x = 370 - margin - size / 2;
+      else                         x = 185; // center
 
-    if (stroke) {
-      ctx.strokeStyle = (color === '#000000') ? '#ffffff' : '#000000';
-      ctx.lineWidth = size * 0.18;
-      ctx.lineJoin = 'round';
-      ctx.strokeText(text, x, y);
+      // Y start position
+      var yStart;
+      if (pos.y === 'top')         yStart = margin + size;
+      else if (pos.y === 'middle') yStart = Math.max(size, (320 - totalH) / 2 + size);
+      else                         yStart = Math.max(size, 320 - margin - totalH + size);
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      chars.forEach(function(ch, i) {
+        var cy = yStart + i * lineH;
+        if (stroke) {
+          ctx.strokeStyle = (color === '#000000') ? '#ffffff' : '#000000';
+          ctx.lineWidth   = size * 0.18;
+          ctx.lineJoin    = 'round';
+          ctx.strokeText(ch, x, cy);
+        }
+        ctx.fillStyle = color;
+        ctx.fillText(ch, x, cy);
+      });
+
+    } else {
+      // ── Horizontal writing ────────────────────────────────────────────────
+      ctx.textAlign    = 'left';
+      ctx.textBaseline = 'alphabetic';
+      var textW = ctx.measureText(text).width;
+
+      var x;
+      if (pos.x === 'left')       x = margin;
+      else if (pos.x === 'right') x = 370 - textW - margin;
+      else                        x = (370 - textW) / 2;
+
+      var y;
+      if (pos.y === 'top')        y = size + margin;
+      else if (pos.y === 'middle') y = 160 + size / 2;
+      else                        y = 320 - margin;
+
+      if (stroke) {
+        ctx.strokeStyle = (color === '#000000') ? '#ffffff' : '#000000';
+        ctx.lineWidth   = size * 0.18;
+        ctx.lineJoin    = 'round';
+        ctx.strokeText(text, x, y);
+      }
+      ctx.fillStyle = color;
+      ctx.fillText(text, x, y);
     }
-    ctx.fillStyle = color;
-    ctx.fillText(text, x, y);
   };
   img.src = _modalDataUrl;
 }
-
 function clearOverlay() {
   document.getElementById('overlayText').value = '';
   renderOverlay();
