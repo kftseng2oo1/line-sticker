@@ -1,44 +1,23 @@
-# line-sticker
+# LINE 貼圖工作室
 
-> 一個 Progressive Web App
+用 AI 生成或上傳圖片，加上文字、去背、套邊框，整理成符合 LINE Creators Market 規格的貼圖套件 ZIP。
 
-## 📦 包含檔案
+**線上使用**：https://kftseng2oo1.github.io/line-sticker/
 
-- `icon-192.png`
-- `icon-512.png`
-- `manifest.json`
-- `sw.js`
-- `index.html`
-- `icon.svg`
-- `icon-maskable.svg`
-- `offline.html`
+## 主要功能
+- **🤖 AI 生成**
+  - Claude SVG：選角色（貓咪、柴犬、熊熊、青蛙、兔兔…）、畫風、常用語，生成向量貼圖
+  - Stability AI：上傳照片轉成新海誠、皮克斯 3D、吉卜力、水彩、浮世繪、賽博龐克等風格
+- **📁 上傳圖片**：自動縮放到貼圖尺寸，可用 remove.bg 去背，套用邊框
+- 文字可橫排或直排，也可不加字
+- **🗂 管理貼圖**：分套件管理，每套 8 張，累計最多 40 張
+- **📦 匯出 ZIP**，可複製圖片或分享到 LINE
 
-## 🚀 部署到 GitHub Pages
+## 技術與依賴
+- 單檔 HTML PWA（`index.html` 內含全部 HTML/CSS/JS），`manifest.json` + `sw.js` 提供安裝到主畫面與離線快取。
+- 後端：`arcar.kftseng2oo1.workers.dev`（Claude、`/sd/t2i`、`/sd/i2i`）
+- 去背：`api.remove.bg`（需 API Key）；JSZip（cdnjs）
 
-```bash
-git init
-git add .
-git commit -m "init: line-sticker PWA"
-git branch -M main
-git remote add origin https://github.com/<username>/<repo>.git
-git push -u origin main
-```
-
-然後在 GitHub repo → **Settings → Pages** → Source 選 `main` 分支，等待幾分鐘後即可訪問。
-
-## 📱 安裝 PWA
-
-在支援的瀏覽器（Chrome / Edge / Safari iOS）中打開網頁，  
-點擊「**安裝**」或「**加入主畫面**」即可將此 App 安裝到裝置。
-
-## ⚙ 技術規格
-
-| 項目 | 值 |
-|------|-----|
-| display | standalone |
-| theme_color | #1a73e8 |
-| lang | zh-TW |
-| scope | /line-sticker/ |
-
----
-*由 [PWA 打包神器](https://github.com) 自動生成*
+## 相關 repo
+- [cut](https://github.com/kftseng2oo1/cut)：把整張貼圖表格裁成單張
+- [Cmt](https://github.com/kftseng2oo1/Cmt)：LINE 動態貼圖編輯器
