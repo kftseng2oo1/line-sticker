@@ -2074,7 +2074,7 @@ async function generateOne(idx, prompt, name) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-5-5',
         max_tokens: 4096,
         messages: [{
           role: 'user',
@@ -3095,7 +3095,7 @@ async function testWorker() {
     var r1 = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 5, messages: [{ role: 'user', content: 'hi' }] })
+      body: JSON.stringify({ model: 'claude-haiku-5-5', max_tokens: 5, messages: [{ role: 'user', content: 'hi' }] })
     });
     results.push('/ → HTTP ' + r1.status + (r1.status === 200 ? ' ✅' : r1.status === 401 ? ' ⚠️ Key無效' : ' ❓'));
   } catch(e) {
